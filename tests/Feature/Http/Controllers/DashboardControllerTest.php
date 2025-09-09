@@ -1,0 +1,327 @@
+<?php
+
+use App\Models\User;
+use App\Models\Category;
+use App\Models\PredictionQuestion;
+use App\Models\Prediction;
+use App\Models\Achievement;
+use App\Models\DailyLeaderboard;
+use Inertia\Testing\AssertableInertia as Assert;
+
+it('can get dashboard with daily questions and user stats', function () {
+    $user = User::factory()->create([
+        'telegram_id' => 123456789,
+        'first_name' => 'Dashboard User',
+        'daily_coins' => 850,
+        'total_predictions' => 45,
+        'correct_predictions' => 32,
+        'current_streak' => 5,
+        'best_streak' => 12,
+    ]);
+
+    // Create categories and questions
+    $cryptoCategory = Category::factory()->create([
+        'name' => 'Crypto',
+        'icon' => 'bitcoin',
+        'color' => '#f7931a',
+        'is_active' => true,
+    ]);
+
+    $sportsCategory = Category::factory()->create([
+        'name' => 'Sports', 
+        'icon' => 'football',
+        'color' => '#28a745',
+        'is_active' => true,
+    ]);
+
+    // Create active questions for today
+    PredictionQuestion::factory()->count(8)->create([
+        'category_id' => $cryptoCategory->id,
+        'status' => 'active',
+        'resolution_time' => now()->addHours(6),
+    ]);
+
+    PredictionQuestion::factory()->count(4)->create([
+        'category_id' => $sportsCategory->id,
+        'status' => 'active', 
+        'resolution_time' => now()->addHours(3),
+    ]);
+
+    // Create some existing predictions by user
+    $questions = PredictionQuestion::take(3)->get();
+    foreach ($questions as $question) {
+        Prediction::factory()->create([
+            'user_id' => $user->id,
+            'question_id' => $question->id,
+            'choice' => 'A',
+            'bet_amount' => 50,
+        ]);
+    }
+
+    // Create recent achievement
+    Achievement::factory()->create([
+        'user_id' => $user->id,
+        'achievement_type' => 'streak_milestone',
+        'title' => '5-Day Streak',
+        'description' => 'Achieved 5-day prediction streak',
+        'icon' => 'fire',
+        'earned_at' => now()->subHour(),
+    ]);
+
+    // Create leaderboard entry for today
+    DailyLeaderboard::factory()->create([
+        'user_id' => $user->id,
+        'leaderboard_date' => now()->toDateString(),
+        'total_winnings' => 450,
+        'predictions_made' => 8,
+        'correct_predictions' => 6,
+        'accuracy_percentage' => 75.00,
+        'rank' => 15,
+    ]);
+
+    $this->actingAs($user);
+
+    $response = $this->get('/dashboard');
+
+    $response->assertStatus(200)
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Dashboard')
+            ->has('dailyQuestions', 12) // 8 + 4 questions
+            ->has('dailyQuestions.0', fn (Assert $question) => $question
+                ->has('id')
+                ->has('category')
+                ->has('title')
+                ->has('option_a')
+                ->has('option_b')
+                ->has('resolution_time')
+                ->where('category.name', fn ($name) => in_array($name, ['Crypto', 'Sports']))
+                ->whereType('user_prediction', 'array|null')
+            )
+            ->has('userStats', fn (Assert $stats) => $stats
+                ->where('dailyCoins', 850)
+                ->where('totalPredictions', 45)
+                ->where('correctPredictions', 32)
+                ->where('accuracyPercentage', 71.11) // 32/45 * 100
+                ->where('currentStreak', 5)
+                ->where('bestStreak', 12)
+            )
+            ->has('todayStats', fn (Assert $today) => $today
+                ->where('predictionsToday', 3) // User made 3 predictions today
+                ->where('questionsRemaining', 9) // 12 total - 3 predicted
+                ->where('coinsSpentToday', 150) // 3 * 50
+            )
+            ->has('recentAchievement', fn (Assert $achievement) => $achievement
+                ->where('title', '5-Day Streak')
+                ->where('icon', 'fire')
+                ->has('earned_at')
+            )
+            ->has('leaderboardPosition', fn (Assert $position) => $position
+                ->where('rank', 15)
+                ->where('totalWinnings', 450)
+                ->where('accuracyPercentage', 75.00)
+            )
+        );
+});
+
+it('shows questions with existing user predictions', function () {
+    $user = User::factory()->create(['telegram_id' => 123456789]);
+    
+    $category = Category::factory()->create(['is_active' => true]);
+    
+    $question1 = PredictionQuestion::factory()->create([
+        'category_id' => $category->id,
+        'status' => 'active',
+        'title' => 'Question 1',
+    ]);
+    
+    $question2 = PredictionQuestion::factory()->create([
+        'category_id' => $category->id,
+        'status' => 'active',
+        'title' => 'Question 2',
+    ]);
+
+    // User has prediction for question1 but not question2
+    Prediction::factory()->create([
+        'user_id' => $user->id,
+        'question_id' => $question1->id,
+        'choice' => 'B',
+        'bet_amount' => 75,
+        'potential_winnings' => 112,
+    ]);
+
+    $this->actingAs($user);
+
+    $response = $this->get('/dashboard');
+
+    $response->assertStatus(200)
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('dailyQuestions', 2)
+            ->has('dailyQuestions.0.user_prediction', fn (Assert $prediction) => $prediction
+                ->where('choice', 'B')
+                ->where('bet_amount', 75)
+                ->where('potential_winnings', 112)
+            )
+            ->where('dailyQuestions.1.user_prediction', null) // No prediction for question2
+        );
+});
+
+it('shows empty state when no questions available', function () {
+    $user = User::factory()->create([
+        'telegram_id' => 123456789,
+        'daily_coins' => 1000,
+    ]);
+
+    // No active questions created
+
+    $this->actingAs($user);
+
+    $response = $this->get('/dashboard');
+
+    $response->assertStatus(200)
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Dashboard')
+            ->has('dailyQuestions', 0)
+            ->has('userStats')
+            ->where('todayStats.predictionsToday', 0)
+            ->where('todayStats.questionsRemaining', 0)
+            ->where('todayStats.coinsSpentToday', 0)
+            ->where('recentAchievement', null)
+            ->where('leaderboardPosition', null)
+        );
+});
+
+it('calculates today stats correctly', function () {
+    $user = User::factory()->create([
+        'telegram_id' => 123456789,
+        'daily_coins' => 600, // Spent 400 coins today
+    ]);
+
+    $category = Category::factory()->create(['is_active' => true]);
+
+    // Create 10 questions
+    $questions = PredictionQuestion::factory()->count(10)->create([
+        'category_id' => $category->id,
+        'status' => 'active',
+        'resolution_time' => now()->addHours(4),
+    ]);
+
+    // User made predictions on 4 questions with different bet amounts
+    Prediction::factory()->create([
+        'user_id' => $user->id,
+        'question_id' => $questions[0]->id,
+        'bet_amount' => 100,
+        'created_at' => now(), // Today
+    ]);
+
+    Prediction::factory()->create([
+        'user_id' => $user->id,
+        'question_id' => $questions[1]->id,
+        'bet_amount' => 150,
+        'created_at' => now(), // Today
+    ]);
+
+    Prediction::factory()->create([
+        'user_id' => $user->id,
+        'question_id' => $questions[2]->id,
+        'bet_amount' => 75,
+        'created_at' => now(), // Today
+    ]);
+
+    Prediction::factory()->create([
+        'user_id' => $user->id,
+        'question_id' => $questions[3]->id,
+        'bet_amount' => 75,
+        'created_at' => now(), // Today
+    ]);
+
+    $this->actingAs($user);
+
+    $response = $this->get('/dashboard');
+
+    $response->assertStatus(200)
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('todayStats.predictionsToday', 4)
+            ->where('todayStats.questionsRemaining', 6) // 10 - 4
+            ->where('todayStats.coinsSpentToday', 400) // 100+150+75+75
+        );
+});
+
+it('shows most recent achievement when multiple exist', function () {
+    $user = User::factory()->create(['telegram_id' => 123456789]);
+
+    // Create multiple achievements
+    Achievement::factory()->create([
+        'user_id' => $user->id,
+        'title' => 'Old Achievement',
+        'earned_at' => now()->subDays(5),
+    ]);
+
+    Achievement::factory()->create([
+        'user_id' => $user->id,
+        'title' => 'Recent Achievement',
+        'earned_at' => now()->subHour(),
+    ]);
+
+    Achievement::factory()->create([
+        'user_id' => $user->id,
+        'title' => 'Older Achievement', 
+        'earned_at' => now()->subDays(2),
+    ]);
+
+    $this->actingAs($user);
+
+    $response = $this->get('/dashboard');
+
+    $response->assertStatus(200)
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('recentAchievement.title', 'Recent Achievement')
+        );
+});
+
+it('filters out inactive categories and resolved questions', function () {
+    $user = User::factory()->create(['telegram_id' => 123456789]);
+
+    $activeCategory = Category::factory()->create(['is_active' => true]);
+    $inactiveCategory = Category::factory()->create(['is_active' => false]);
+
+    // Create questions in different states
+    PredictionQuestion::factory()->create([
+        'category_id' => $activeCategory->id,
+        'status' => 'active',
+        'title' => 'Active Question',
+    ]);
+
+    PredictionQuestion::factory()->create([
+        'category_id' => $inactiveCategory->id,
+        'status' => 'active',
+        'title' => 'Inactive Category Question',
+    ]);
+
+    PredictionQuestion::factory()->create([
+        'category_id' => $activeCategory->id,
+        'status' => 'resolved',
+        'title' => 'Resolved Question',
+    ]);
+
+    PredictionQuestion::factory()->create([
+        'category_id' => $activeCategory->id,
+        'status' => 'cancelled',
+        'title' => 'Cancelled Question',
+    ]);
+
+    $this->actingAs($user);
+
+    $response = $this->get('/dashboard');
+
+    $response->assertStatus(200)
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('dailyQuestions', 1) // Only the active question in active category
+            ->where('dailyQuestions.0.title', 'Active Question')
+        );
+});
+
+it('requires authentication to access dashboard', function () {
+    $response = $this->get('/dashboard');
+
+    $response->assertRedirect('/login');
+});
