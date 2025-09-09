@@ -1,0 +1,592 @@
+openapi: 3.0.0
+info:
+  title: Social Prediction Game API
+  description: Telegram Mini App for social prediction gaming
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@predictiongame.com
+
+servers:
+  - url: https://api.predictiongame.com/v1
+    description: Production server
+  - url: https://staging-api.predictiongame.com/v1
+    description: Staging server
+
+security:
+  - TelegramAuth: []
+
+paths:
+  /questions/daily:
+    get:
+      summary: Get daily prediction questions
+      description: Retrieve 8-12 daily prediction questions for the current day
+      tags:
+        - Questions
+      responses:
+        '200':
+          description: Daily questions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    minItems: 8
+                    maxItems: 12
+                    items:
+                      $ref: '#/components/schemas/PredictionQuestion'
+                  meta:
+                    type: object
+                    properties:
+                      date:
+                        type: string
+                        format: date
+                        example: "2025-09-09"
+                      total_questions:
+                        type: integer
+                        example: 10
+                      categories_count:
+                        type: integer
+                        example: 4
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /predictions:
+    post:
+      summary: Submit user predictions
+      description: Submit one or more predictions with bet amounts
+      tags:
+        - Predictions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                predictions:
+                  type: array
+                  minItems: 1
+                  maxItems: 12
+                  items:
+                    type: object
+                    required: [question_id, choice, bet_amount]
+                    properties:
+                      question_id:
+                        type: integer
+                        example: 123
+                      choice:
+                        type: string
+                        enum: [A, B]
+                        example: "A"
+                      bet_amount:
+                        type: integer
+                        minimum: 10
+                        maximum: 1000
+                        example: 100
+              required: [predictions]
+      responses:
+        '201':
+          description: Predictions submitted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      predictions_created:
+                        type: integer
+                        example: 5
+                      total_bet:
+                        type: integer
+                        example: 500
+                      remaining_coins:
+                        type: integer
+                        example: 500
+                      predictions:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Prediction'
+        '400':
+          description: Invalid prediction data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Insufficient coins for bet"
+                  errors:
+                    type: object
+
+  /leaderboard/daily:
+    get:
+      summary: Get daily leaderboard
+      description: Retrieve current day leaderboard rankings
+      tags:
+        - Leaderboard
+      parameters:
+        - name: limit
+          in: query
+          description: Number of top users to return
+          required: false
+          schema:
+            type: integer
+            minimum: 10
+            maximum: 100
+            default: 50
+        - name: date
+          in: query
+          description: Specific date for leaderboard (default: today)
+          required: false
+          schema:
+            type: string
+            format: date
+            example: "2025-09-09"
+      responses:
+        '200':
+          description: Leaderboard retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      rankings:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/LeaderboardEntry'
+                      user_rank:
+                        type: integer
+                        example: 27
+                        description: Current user's rank
+                      total_participants:
+                        type: integer
+                        example: 1247
+                  meta:
+                    type: object
+                    properties:
+                      date:
+                        type: string
+                        format: date
+                        example: "2025-09-09"
+                      last_updated:
+                        type: string
+                        format: date-time
+                        example: "2025-09-09T15:30:00Z"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /user/stats:
+    get:
+      summary: Get user statistics
+      description: Retrieve personal statistics and history
+      tags:
+        - User
+      responses:
+        '200':
+          description: User statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/UserStats'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /user/streaks:
+    get:
+      summary: Get user streak information
+      description: Retrieve current and historical streak data
+      tags:
+        - User
+      responses:
+        '200':
+          description: Streak information retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      current_streak:
+                        type: integer
+                        example: 7
+                      best_streak:
+                        type: integer
+                        example: 23
+                      streak_multiplier:
+                        type: number
+                        format: float
+                        example: 1.15
+                      next_milestone:
+                        type: integer
+                        example: 10
+                      streak_history:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            streak_length:
+                              type: integer
+                              example: 15
+                            started_date:
+                              type: string
+                              format: date
+                              example: "2025-08-25"
+                            ended_date:
+                              type: string
+                              format: date
+                              example: "2025-09-08"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /achievements/share:
+    post:
+      summary: Share achievement
+      description: Share an achievement on social platforms or with friends
+      tags:
+        - Achievements
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [achievement_id, platform]
+              properties:
+                achievement_id:
+                  type: integer
+                  example: 456
+                platform:
+                  type: string
+                  enum: [telegram, twitter, facebook, instagram]
+                  example: "telegram"
+                custom_message:
+                  type: string
+                  maxLength: 280
+                  example: "Just hit a 10-day prediction streak! 🔥"
+      responses:
+        '200':
+          description: Achievement shared successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      share_url:
+                        type: string
+                        example: "https://t.me/share/url?url=..."
+                      message:
+                        type: string
+                        example: "Achievement shared successfully"
+        '400':
+          description: Invalid sharing request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Achievement not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    TelegramAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Telegram WebApp authentication token
+
+  schemas:
+    PredictionQuestion:
+      type: object
+      required: [id, category, title, option_a, option_b, resolution_time]
+      properties:
+        id:
+          type: integer
+          example: 123
+        category:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 2
+            name:
+              type: string
+              example: "Crypto"
+            icon:
+              type: string
+              example: "bitcoin"
+            color:
+              type: string
+              example: "#f7931a"
+        title:
+          type: string
+          example: "Will Bitcoin be above $100,000 at 6 PM EST?"
+        description:
+          type: string
+          nullable: true
+          example: "Based on current market trends and trading volume"
+        option_a:
+          type: string
+          example: "Yes, above $100,000"
+        option_b:
+          type: string
+          example: "No, $100,000 or below"
+        resolution_time:
+          type: string
+          format: date-time
+          example: "2025-09-09T23:00:00Z"
+        user_prediction:
+          type: object
+          nullable: true
+          description: "User's prediction if already made"
+          properties:
+            choice:
+              type: string
+              enum: [A, B]
+              example: "A"
+            bet_amount:
+              type: integer
+              example: 150
+            potential_winnings:
+              type: integer
+              example: 225
+
+    Prediction:
+      type: object
+      required: [id, question_id, choice, bet_amount, potential_winnings]
+      properties:
+        id:
+          type: integer
+          example: 789
+        question_id:
+          type: integer
+          example: 123
+        choice:
+          type: string
+          enum: [A, B]
+          example: "A"
+        bet_amount:
+          type: integer
+          example: 100
+        potential_winnings:
+          type: integer
+          example: 150
+        multiplier_applied:
+          type: number
+          format: float
+          example: 1.15
+        is_correct:
+          type: boolean
+          nullable: true
+          example: null
+        actual_winnings:
+          type: integer
+          nullable: true
+          example: null
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-09-09T14:30:00Z"
+
+    LeaderboardEntry:
+      type: object
+      required: [rank, user, total_winnings, predictions_made, accuracy]
+      properties:
+        rank:
+          type: integer
+          example: 1
+        user:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 123
+            first_name:
+              type: string
+              example: "John"
+            username:
+              type: string
+              nullable: true
+              example: "johnsmith"
+        total_winnings:
+          type: integer
+          example: 2350
+        predictions_made:
+          type: integer
+          example: 10
+        correct_predictions:
+          type: integer
+          example: 8
+        accuracy_percentage:
+          type: number
+          format: float
+          example: 80.0
+        current_streak:
+          type: integer
+          example: 5
+
+    UserStats:
+      type: object
+      required: [user, daily_coins, total_predictions, correct_predictions, current_streak]
+      properties:
+        user:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 123
+            first_name:
+              type: string
+              example: "John"
+            username:
+              type: string
+              nullable: true
+              example: "johnsmith"
+        daily_coins:
+          type: integer
+          example: 750
+        total_predictions:
+          type: integer
+          example: 247
+        correct_predictions:
+          type: integer
+          example: 189
+        accuracy_percentage:
+          type: number
+          format: float
+          example: 76.5
+        current_streak:
+          type: integer
+          example: 7
+        best_streak:
+          type: integer
+          example: 23
+        total_earnings:
+          type: integer
+          example: 15420
+        achievements:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                example: 456
+              title:
+                type: string
+                example: "Perfect Day"
+              description:
+                type: string
+                example: "Achieved 100% accuracy for a day"
+              icon:
+                type: string
+                example: "trophy"
+              earned_at:
+                type: string
+                format: date-time
+                example: "2025-09-08T20:00:00Z"
+
+    Error:
+      type: object
+      required: [success, message]
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "An error occurred"
+        code:
+          type: string
+          example: "VALIDATION_ERROR"
+
+  responses:
+    Unauthorized:
+      description: Authentication required or invalid
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              message:
+                type: string
+                example: "Unauthorized access"
+              code:
+                type: string
+                example: "UNAUTHORIZED"
+
+    RateLimited:
+      description: Too many requests
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              message:
+                type: string
+                example: "Rate limit exceeded"
+              code:
+                type: string
+                example: "RATE_LIMITED"
+              retry_after:
+                type: integer
+                example: 60
