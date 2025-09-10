@@ -108,6 +108,14 @@ class StreakService
     }
 
     /**
+     * Get streak multiplier based on current streak (alias for calculateStreakMultiplier).
+     */
+    public function getStreakMultiplier(int $streak): float
+    {
+        return $this->calculateStreakMultiplier($streak);
+    }
+
+    /**
      * Get user's current streak information.
      */
     public function getUserStreakInfo(User $user): array

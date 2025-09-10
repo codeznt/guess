@@ -65,20 +65,22 @@ it('completes full daily game flow from dashboard to results', function () {
         );
 
     // Step 3: Submit predictions
-    $predictionsResponse = $this->post('/predictions', [
-        'predictions' => [
-            [
-                'question_id' => $question1->id,
-                'choice' => 'A',
-                'bet_amount' => 200,
-            ],
-            [
-                'question_id' => $question2->id,
-                'choice' => 'B',
-                'bet_amount' => 150,
+    $predictionsResponse = $this->withSession(['_token' => csrf_token()])
+        ->post('/predictions', [
+            '_token' => csrf_token(),
+            'predictions' => [
+                [
+                    'question_id' => $question1->id,
+                    'choice' => 'A',
+                    'bet_amount' => 200,
+                ],
+                [
+                    'question_id' => $question2->id,
+                    'choice' => 'B',
+                    'bet_amount' => 150,
+                ]
             ]
-        ]
-    ]);
+        ]);
 
     $predictionsResponse->assertRedirect('/dashboard')
         ->assertSessionHas('success');

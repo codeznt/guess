@@ -16,8 +16,18 @@ class DailyLeaderboardFactory extends Factory
      */
     public function definition(): array
     {
+        $predictionsMade = $this->faker->numberBetween(1, 20);
+        $correctPredictions = $this->faker->numberBetween(0, $predictionsMade);
+        $accuracyPercentage = $predictionsMade > 0 ? round(($correctPredictions / $predictionsMade) * 100, 2) : 0;
+        
         return [
-            //
+            'user_id' => \App\Models\User::factory(),
+            'leaderboard_date' => $this->faker->dateTimeBetween('-7 days', 'now')->format('Y-m-d'),
+            'total_winnings' => $this->faker->numberBetween(0, 5000),
+            'predictions_made' => $predictionsMade,
+            'correct_predictions' => $correctPredictions,
+            'accuracy_percentage' => $accuracyPercentage,
+            'rank' => $this->faker->numberBetween(1, 100),
         ];
     }
 }

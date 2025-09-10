@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             $table->bigInteger('telegram_id')->unique()->nullable()->after('id');
-            $table->string('username')->nullable()->change();
+            $table->string('username')->nullable()->after('telegram_id');
             $table->string('first_name')->nullable()->after('username');
             $table->string('last_name')->nullable()->after('first_name');
             $table->integer('daily_coins')->default(1000)->after('last_name');
@@ -43,6 +43,7 @@ return new class extends Migration
             $table->dropIndex(['last_active_date']);
             $table->dropColumn([
                 'telegram_id',
+                'username',
                 'first_name',
                 'last_name',
                 'daily_coins',
@@ -56,7 +57,6 @@ return new class extends Migration
             // Revert email and password to not nullable
             $table->string('email')->nullable(false)->change();
             $table->string('password')->nullable(false)->change();
-            $table->string('username')->nullable(false)->change();
         });
     }
 };

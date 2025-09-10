@@ -23,12 +23,24 @@ class UserFactory extends Factory
      */
     public function definition(): array
     {
+        $firstName = fake()->firstName();
+        
         return [
-            'name' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
-            'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('password'),
-            'remember_token' => Str::random(10),
+            'telegram_id' => fake()->unique()->numberBetween(100000000, 999999999),
+            'name' => $firstName,
+            'username' => fake()->optional(0.7)->userName(),
+            'first_name' => $firstName,
+            'last_name' => null,
+            'email' => fake()->boolean(30) ? fake()->unique()->safeEmail() : null,
+            'email_verified_at' => null,
+            'password' => null,
+            'remember_token' => null,
+            'daily_coins' => fake()->numberBetween(0, 1000),
+            'total_predictions' => fake()->numberBetween(0, 100),
+            'correct_predictions' => fake()->numberBetween(0, 50),
+            'current_streak' => fake()->numberBetween(0, 20),
+            'best_streak' => fake()->numberBetween(0, 50),
+            'last_active_date' => fake()->optional(0.8)->dateTimeBetween('-7 days', 'now')?->format('Y-m-d'),
         ];
     }
 
