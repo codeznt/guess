@@ -84,14 +84,14 @@ it('calculates daily leaderboard rankings correctly', function () {
             ->component('Leaderboard/Daily')
             ->has('rankings', 3)
             ->where('rankings.0.rank', 1)
-            ->where('rankings.0.user.first_name', 'Top Performer')
+            ->where('rankings.0.first_name', 'Top Performer')
             ->where('rankings.0.total_winnings', 1500)
             ->where('rankings.0.accuracy_percentage', '100.00')
             ->where('rankings.1.rank', 2)
-            ->where('rankings.1.user.first_name', 'Good Player')
+            ->where('rankings.1.first_name', 'Good Player')
             ->where('rankings.1.total_winnings', 675)
             ->where('rankings.2.rank', 3)
-            ->where('rankings.2.user.first_name', 'Average Player')
+            ->where('rankings.2.first_name', 'Average Player')
             ->where('rankings.2.total_winnings', 300)
             ->where('userRank', 1) // Current user's rank
             ->where('totalParticipants', 3)
@@ -158,9 +158,9 @@ it('handles tied scores correctly with tiebreaker rules', function () {
 
     $response->assertStatus(200)
         ->assertInertia(fn ($page) => $page
-            ->where('rankings.0.user.first_name', 'High Accuracy')
+            ->where('rankings.0.first_name', 'High Accuracy')
             ->where('rankings.0.rank', 1)
-            ->where('rankings.1.user.first_name', 'Low Accuracy')
+            ->where('rankings.1.first_name', 'Low Accuracy')
             ->where('rankings.1.rank', 2)
         );
 });
@@ -406,10 +406,10 @@ it('ranks users by total winnings primarily', function () {
     $response->assertStatus(200)
         ->assertInertia(fn ($page) => $page
             ->has('rankings', 4)
-            ->where('rankings.0.user.first_name', 'First Place')
+            ->where('rankings.0.first_name', 'First Place')
             ->where('rankings.0.total_winnings', 2000)
             ->where('rankings.0.rank', 1)
-            ->where('rankings.1.user.first_name', 'Second Place')
+            ->where('rankings.1.first_name', 'Second Place')
             ->where('rankings.1.total_winnings', 1500)
             ->where('rankings.1.rank', 2)
             ->where('userRank', 2)

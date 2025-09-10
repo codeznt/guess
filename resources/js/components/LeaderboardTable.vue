@@ -96,7 +96,8 @@ const props = withDefaults(defineProps<Props>(), {
   showTrend: false,
   isLoading: false,
   hasMore: false,
-  maxVisible: 50
+  maxVisible: 50,
+  entries: () => []
 });
 
 // Emits

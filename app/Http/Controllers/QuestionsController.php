@@ -76,16 +76,22 @@ class QuestionsController extends Controller
             'remaining_questions' => $questions->filter(fn($q) => !$q['user_prediction'])->count(),
         ];
 
+        // Calculate time until daily reset
+        $resetTime = now()->endOfDay();
+        $timeUntilReset = $resetTime->diffForHumans(now(), ['parts' => 2]);
+
         return Inertia::render('Questions/Daily', [
             'questions' => $questions->values(),
             'userCoins' => $user->daily_coins,
             'user' => array_merge([
                 'id' => $user->id,
+                'name' => $user->first_name . ($user->last_name ? ' ' . $user->last_name : ''),
                 'first_name' => $user->first_name,
                 'last_name' => $user->last_name,
                 'username' => $user->username,
                 'telegram_id' => $user->telegram_id,
             ], $userStats),
+            'timeUntilReset' => $timeUntilReset,
             'meta' => $meta,
         ]);
     }

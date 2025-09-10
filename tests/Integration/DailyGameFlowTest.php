@@ -52,7 +52,7 @@ it('completes full daily game flow from dashboard to results', function () {
     $dashboardResponse->assertStatus(200)
         ->assertInertia(fn ($page) => $page
             ->component('Dashboard')
-            ->has('dailyQuestions', 2)
+            ->has('questions', 2)
             ->where('userStats.dailyCoins', 1000)
         );
 
@@ -286,7 +286,7 @@ it('handles multiple users competing on same day', function () {
     $leaderboardResponse->assertStatus(200)
         ->assertInertia(fn ($page) => $page
             ->has('rankings', 2)
-            ->where('rankings.0.user.first_name', 'Player One')
+            ->where('rankings.0.first_name', 'Player One')
             ->where('rankings.0.total_winnings', 450)
             ->where('rankings.0.rank', 1)
             ->where('userRank', 1)

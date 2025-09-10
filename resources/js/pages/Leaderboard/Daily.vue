@@ -68,9 +68,10 @@
     <!-- Leaderboard Table -->
     <div class="leaderboard-container">
       <LeaderboardTable 
-        :rankings="rankings"
-        :loading="loading"
+        :entries="rankings"
         :current-user-id="user.id"
+        :user-position="userPosition"
+        :is-loading="loading"
         @load-more="loadMore"
       />
     </div>
@@ -117,6 +118,8 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
 import LeaderboardTable from '@/components/LeaderboardTable.vue';
 import { initializeTelegramMock } from '@/lib/telegram-mock';
+// Import Wayfinder routes
+import { dashboard } from '@/routes';
 
 // Props
 interface User {
@@ -133,16 +136,17 @@ interface UserPosition {
 }
 
 interface LeaderboardEntry {
+  user_id: number;
   rank: number;
-  user: {
-    id: number;
-    name: string;
-    avatar?: string;
-  };
-  score: number;
-  accuracy: number;
-  predictions: number;
-  winnings: number;
+  username?: string;
+  first_name: string;
+  last_name?: string;
+  total_winnings: number;
+  predictions_made: number;
+  accuracy_percentage: number;
+  current_streak: number;
+  avatar_url?: string;
+  trend?: 'up' | 'down' | 'same';
 }
 
 interface Stats {
@@ -216,7 +220,7 @@ onMounted(() => {
     
     // Set back button
     telegram.value.BackButton.onClick(() => {
-      router.visit(route('dashboard'));
+      router.visit(dashboard.url());
     });
     telegram.value.BackButton.show();
     

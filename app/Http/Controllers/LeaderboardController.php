@@ -52,19 +52,16 @@ class LeaderboardController extends Controller
             return [
                 'user_id' => $entry->user_id,
                 'rank' => $entry->rank,
+                'username' => $entry->user->username,
+                'first_name' => $entry->user->first_name,
+                'last_name' => $entry->user->last_name,
                 'total_winnings' => $entry->total_winnings,
                 'predictions_made' => $entry->predictions_made,
                 'correct_predictions' => $entry->correct_predictions,
                 'accuracy_percentage' => $entry->accuracy_percentage,
                 'current_streak' => $entry->user->current_streak ?? 0,
-                'user' => [
-                    'id' => $entry->user->id,
-                    'first_name' => $entry->user->first_name,
-                    'last_name' => $entry->user->last_name,
-                    'username' => $entry->user->username,
-                    'telegram_id' => $entry->user->telegram_id,
-                ],
-                'is_current_user' => $entry->user_id === $user->id,
+                'avatar_url' => $entry->user->avatar ?? null,
+                'trend' => null, // You can implement this later
             ];
         })->values();
 
@@ -103,9 +100,29 @@ class LeaderboardController extends Controller
         ];
 
         return Inertia::render('Leaderboard/Daily', [
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->first_name . ($user->last_name ? ' ' . $user->last_name : ''),
+                'first_name' => $user->first_name,
+                'last_name' => $user->last_name,
+                'username' => $user->username,
+                'telegram_id' => $user->telegram_id,
+                'avatar' => $user->avatar ?? null,
+            ],
             'rankings' => $rankings,
             'userRank' => $userRank,
-            'userPosition' => $userPosition,
+            'userPosition' => $userRank && $userEntry ? [
+                'rank' => $userEntry->rank,
+                'score' => $userEntry->total_winnings,
+                'accuracy' => $userEntry->accuracy_percentage,
+                'change' => null, // You can implement this later for position change tracking
+            ] : null,
+            'stats' => [
+                'total_players' => $periodStats['total_participants'],
+                'total_predictions' => $periodStats['total_predictions'],
+                'total_winnings' => $periodStats['total_winnings'],
+                'average_accuracy' => $periodStats['average_accuracy'],
+            ],
             'totalParticipants' => $totalParticipants,
             'periodStats' => $periodStats,
             'meta' => $meta,
@@ -143,13 +160,29 @@ class LeaderboardController extends Controller
         ];
 
         return Inertia::render('Leaderboard/Daily', [
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->first_name . ($user->last_name ? ' ' . $user->last_name : ''),
+                'first_name' => $user->first_name,
+                'last_name' => $user->last_name,
+                'username' => $user->username,
+                'telegram_id' => $user->telegram_id,
+                'avatar' => $user->avatar ?? null,
+            ],
             'rankings' => $leaderboardData['rankings'],
             'userRank' => $leaderboardData['userRank'],
             'userPosition' => $leaderboardData['userPosition'],
+            'stats' => [
+                'total_players' => $leaderboardData['stats']['total_participants'] ?? 0,
+                'total_predictions' => $leaderboardData['stats']['total_predictions'] ?? 0,
+                'total_winnings' => $leaderboardData['stats']['total_winnings'] ?? 0,
+                'average_accuracy' => $leaderboardData['stats']['average_accuracy'] ?? 0,
+            ],
             'totalParticipants' => $leaderboardData['totalParticipants'],
             'periodStats' => $leaderboardData['stats'],
             'meta' => $meta,
             'currentUserId' => $user->id,
+            'period' => $period,
         ]);
     }
 

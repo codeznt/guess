@@ -16,8 +16,8 @@
       <!-- Progress Bar -->
       <div class="progress-section">
         <div class="progress-header">
-          <span class="progress-text">Progress: {{ answeredCount }} / {{ questions.length }}</span>
-          <span class="time-remaining">⏰ {{ timeUntilReset }}</span>
+          <span class="progress-text">Progress: {{ answeredCount }} / {{ (questions && Array.isArray(questions)) ? questions.length : 0 }}</span>
+          <span class="time-remaining">⏰ {{ timeUntilReset || 'Loading...' }}</span>
         </div>
         <div class="progress-bar">
           <div 
@@ -30,24 +30,25 @@
 
     <!-- Streak Display -->
     <StreakDisplay 
-      :current-streak="user.current_streak"
-      :streak-multiplier="user.streak_multiplier"
-      :best-streak="user.best_streak"
+      :current-streak="user?.current_streak || 0"
+      :streak-multiplier="user?.streak_multiplier || 1"
+      :best-streak="user?.best_streak || 0"
       class="streak-display"
     />
 
     <!-- Questions Grid -->
     <div class="questions-container">
-      <div class="questions-grid" v-if="questions.length > 0">
+      <div class="questions-grid" v-if="questions && Array.isArray(questions) && questions.length > 0">
         <PredictionCard
-          v-for="question in questions"
-          :key="question.id"
+          v-for="(question, index) in questions"
+          :key="question?.id || `question-${index}-${question?.title || 'unknown'}`"
           :question="question"
-          :user-prediction="question.user_prediction"
-          :user-coins="user.daily_coins"
-          :streak-multiplier="user.streak_multiplier"
+          :user-prediction="question?.user_prediction"
+          :user-coins="user?.daily_coins || 0"
+          :streak-multiplier="user?.streak_multiplier || 1"
           @prediction-made="handlePredictionMade"
           class="question-card"
+          v-if="question"
         />
       </div>
 
@@ -59,7 +60,7 @@
           New daily questions will be available soon. Check back later!
         </p>
         <Link 
-          :href="route('dashboard')" 
+          :href="dashboard.url()" 
           class="btn btn-primary"
         >
           🏠 Back to Dashboard
@@ -67,12 +68,12 @@
       </div>
 
       <!-- Completed State -->
-      <div v-if="allQuestionsAnswered && questions.length > 0" class="completed-overlay">
+      <div v-if="allQuestionsAnswered && questions && questions.length > 0" class="completed-overlay">
         <div class="completed-content">
           <div class="completed-icon">🎉</div>
           <h2 class="completed-title">All Questions Completed!</h2>
           <p class="completed-description">
-            Great job! You've answered all {{ questions.length }} questions today.
+            Great job! You've answered all {{ (questions && Array.isArray(questions)) ? questions.length : 0 }} questions today.
             <br>Come back tomorrow for new challenges!
           </p>
           
@@ -87,20 +88,20 @@
               <div class="stat-label">Coins Won</div>
             </div>
             <div class="stat-item">
-              <div class="stat-value">{{ user.current_streak }}</div>
+              <div class="stat-value">{{ user?.current_streak || 0 }}</div>
               <div class="stat-label">Current Streak</div>
             </div>
           </div>
 
           <div class="completion-actions">
             <Link 
-              :href="route('leaderboard')" 
+              :href="leaderboard.index.url()" 
               class="btn btn-secondary"
             >
               🏆 View Leaderboard
             </Link>
             <Link 
-              :href="route('dashboard')" 
+              :href="dashboard.url()" 
               class="btn btn-primary"
             >
               🏠 Dashboard
@@ -146,6 +147,9 @@ import { Link, router } from '@inertiajs/vue3';
 import PredictionCard from '@/components/PredictionCard.vue';
 import StreakDisplay from '@/components/StreakDisplay.vue';
 import { initializeTelegramMock } from '@/lib/telegram-mock';
+// Import Wayfinder routes
+import { dashboard } from '@/routes';
+import leaderboard from '@/routes/leaderboard';
 
 // Props
 interface User {
@@ -168,19 +172,25 @@ interface Question {
     id: number;
     name: string;
     color: string;
+    icon: string;
   };
   resolution_time: string;
+  is_resolved: boolean;
+  correct_answer?: string;
   user_prediction?: {
+    id: number;
     choice: 'A' | 'B';
     bet_amount: number;
     potential_winnings: number;
-    multiplier_applied: number;
+    actual_winnings?: number;
+    is_correct?: boolean;
+    created_at?: string;
   };
 }
 
 const props = defineProps<{
   user: User;
-  questions: Question[];
+  questions?: Question[];
   timeUntilReset: string;
 }>();
 
@@ -189,29 +199,32 @@ const telegram = ref<any>(null);
 
 // Computed properties
 const answeredCount = computed(() => {
-  return props.questions.filter(q => q.user_prediction).length;
+  if (!props.questions || !Array.isArray(props.questions)) return 0;
+  return props.questions.filter(q => q && q.user_prediction).length;
 });
 
 const progressPercentage = computed(() => {
-  if (props.questions.length === 0) return 0;
+  if (!props.questions || !Array.isArray(props.questions) || props.questions.length === 0) return 0;
   return (answeredCount.value / props.questions.length) * 100;
 });
 
 const allQuestionsAnswered = computed(() => {
-  return props.questions.length > 0 && answeredCount.value === props.questions.length;
+  return props.questions && Array.isArray(props.questions) && props.questions.length > 0 && answeredCount.value === props.questions.length;
 });
 
 const correctPredictions = computed(() => {
+  if (!props.questions || !Array.isArray(props.questions)) return 0;
   return props.questions.filter(q => 
-    q.user_prediction && 
+    q && q.user_prediction && 
     // We don't know if they're correct yet, so just count answered ones
     q.user_prediction
   ).length;
 });
 
 const totalWinnings = computed(() => {
+  if (!props.questions || !Array.isArray(props.questions)) return 0;
   return props.questions
-    .filter(q => q.user_prediction)
+    .filter(q => q && q.user_prediction)
     .reduce((total, q) => total + (q.user_prediction?.potential_winnings || 0), 0);
 });
 
@@ -232,11 +245,13 @@ const handlePredictionMade = (data: any) => {
   }
   
   // Show completion overlay if all questions are now answered
-  const newAnsweredCount = answeredCount.value + 1;
-  if (newAnsweredCount === props.questions.length) {
-    // Trigger confetti or celebration animation
-    if (telegram.value?.HapticFeedback) {
-      telegram.value.HapticFeedback.notificationOccurred('success');
+  if (props.questions && Array.isArray(props.questions) && props.questions.length > 0) {
+    const newAnsweredCount = answeredCount.value + 1;
+    if (newAnsweredCount === props.questions.length) {
+      // Trigger confetti or celebration animation
+      if (telegram.value?.HapticFeedback) {
+        telegram.value.HapticFeedback.notificationOccurred('success');
+      }
     }
   }
   
@@ -254,10 +269,10 @@ onMounted(() => {
     telegram.value.expand();
     
     // Set main button if not all questions answered
-    if (!allQuestionsAnswered.value && props.questions.length > 0) {
+    if (!allQuestionsAnswered.value && props.questions && Array.isArray(props.questions) && props.questions.length > 0) {
       telegram.value.MainButton.setText('View Results');
       telegram.value.MainButton.onClick(() => {
-        router.visit(route('dashboard'));
+        router.visit(dashboard.url());
       });
       
       // Show main button only if at least one question is answered

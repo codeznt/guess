@@ -36,21 +36,52 @@ class DashboardController extends Controller
         // Get quick actions and recommendations
         $recommendations = $this->getRecommendations($user, $dailyQuestions, $todayStats);
 
+        // Get recent predictions for the activity feed
+        $recentPredictions = $user->predictions()
+            ->with('question:id,title,option_a,option_b')
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get()
+            ->map(function ($prediction) {
+                return [
+                    'id' => $prediction->id,
+                    'choice' => $prediction->choice,
+                    'bet_amount' => $prediction->bet_amount,
+                    'potential_winnings' => $prediction->potential_winnings,
+                    'actual_winnings' => $prediction->actual_winnings,
+                    'is_correct' => $prediction->is_correct,
+                    'created_at' => $prediction->created_at->toISOString(),
+                    'question' => [
+                        'id' => $prediction->question->id,
+                        'title' => $prediction->question->title,
+                        'option_a' => $prediction->question->option_a,
+                        'option_b' => $prediction->question->option_b,
+                    ],
+                ];
+            });
+
+        // Calculate time until daily reset
+        $resetTime = now()->endOfDay();
+        $timeUntilReset = $resetTime->diffForHumans(now(), ['parts' => 2]);
+
         return Inertia::render('Dashboard', [
-            'dailyQuestions' => $dailyQuestions->values(),
+            // Rename dailyQuestions to questions to match the component props
+            'questions' => $dailyQuestions->values(),
             'userStats' => $userStats,
             'todayStats' => $todayStats,
             'recentAchievement' => $recentAchievement,
             'leaderboardPosition' => $leaderboardPosition,
             'recommendations' => $recommendations,
+            'recentPredictions' => $recentPredictions,
+            'timeUntilReset' => $timeUntilReset,
             'user' => [
                 'id' => $user->id,
-                'first_name' => $user->first_name,
-                'last_name' => $user->last_name,
-                'username' => $user->username,
+                'name' => $user->first_name . ($user->last_name ? ' ' . $user->last_name : ''),
+                'avatar' => null, // Add avatar if available
                 'daily_coins' => $user->daily_coins,
                 'current_streak' => $user->current_streak,
                 'best_streak' => $user->best_streak,
+                'streak_multiplier' => round(1 + min($user->current_streak * 0.01, 1.0), 2),
             ],
         ]);
     }

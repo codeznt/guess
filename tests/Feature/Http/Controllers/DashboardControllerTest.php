@@ -85,8 +85,8 @@ it('can get dashboard with daily questions and user stats', function () {
     $response->assertStatus(200)
         ->assertInertia(fn (Assert $page) => $page
             ->component('Dashboard')
-            ->has('dailyQuestions', 12) // 8 + 4 questions
-            ->has('dailyQuestions.0', fn (Assert $question) => $question
+            ->has('questions', 12) // 8 + 4 questions
+            ->has('questions.0', fn (Assert $question) => $question
                 ->has('id')
                 ->has('category')
                 ->has('title')
@@ -169,9 +169,9 @@ it('shows questions with existing user predictions', function () {
 
     $response->assertStatus(200)
         ->assertInertia(fn (Assert $page) => $page
-            ->has('dailyQuestions', 2)
-            ->has('dailyQuestions.0.user_prediction') // Check if user_prediction exists
-            ->where('dailyQuestions.1.user_prediction', null) // No prediction for question2
+            ->has('questions', 2)
+            ->has('questions.0.user_prediction') // Check if user_prediction exists
+            ->where('questions.1.user_prediction', null) // No prediction for question2
         );
 });
 
@@ -190,7 +190,7 @@ it('shows empty state when no questions available', function () {
     $response->assertStatus(200)
         ->assertInertia(fn (Assert $page) => $page
             ->component('Dashboard')
-            ->has('dailyQuestions', 0)
+            ->has('questions', 0)
             ->has('userStats')
             ->where('todayStats.predictionsToday', 0)
             ->where('todayStats.questionsRemaining', 0)
@@ -331,8 +331,8 @@ it('filters out inactive categories and resolved questions', function () {
 
     $response->assertStatus(200)
         ->assertInertia(fn (Assert $page) => $page
-            ->has('dailyQuestions', 1) // Only the active question in active category
-            ->where('dailyQuestions.0.title', 'Active Question')
+            ->has('questions', 1) // Only the active question in active category
+            ->where('questions.0.title', 'Active Question')
         );
 });
 

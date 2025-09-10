@@ -11,7 +11,7 @@
             class="user-avatar"
           >
           <div v-else class="user-avatar-placeholder">
-            {{ user.name.charAt(0).toUpperCase() }}
+            {{ user?.name ? user.name.charAt(0).toUpperCase() : '?' }}
           </div>
         </div>
         <div class="user-details">
@@ -88,13 +88,13 @@
         </p>
         <div class="completed-actions">
           <Link 
-            :href="route('leaderboard')" 
+            :href="leaderboard.index.url()" 
             class="btn btn-secondary"
           >
             🏆 View Leaderboard
           </Link>
           <Link 
-            :href="route('profile')" 
+            :href="profile.show.url()" 
             class="btn btn-primary"
           >
             👤 View Stats
@@ -161,7 +161,7 @@
         </div>
       </div>
       <Link 
-        :href="route('profile')" 
+        :href="profile.show.url()" 
         class="view-all-activity"
       >
         View All Activity →
@@ -171,7 +171,7 @@
     <!-- Quick Actions -->
     <div class="quick-actions">
       <Link 
-        :href="route('questions.daily')" 
+        :href="questionsRoutes.daily.url()" 
         class="action-button primary"
         v-if="!allQuestionsAnswered"
       >
@@ -179,14 +179,14 @@
         <span>Make Predictions</span>
       </Link>
       <Link 
-        :href="route('leaderboard')" 
+        :href="leaderboard.index.url()" 
         class="action-button secondary"
       >
         <span class="action-icon">🏆</span>
         <span>Leaderboard</span>
       </Link>
       <Link 
-        :href="route('profile')" 
+        :href="profile.show.url()" 
         class="action-button secondary"
       >
         <span class="action-icon">👤</span>
@@ -201,6 +201,11 @@ import { computed, onMounted, ref } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import PredictionCard from '@/components/PredictionCard.vue';
 import { initializeTelegramMock } from '@/lib/telegram-mock';
+// Import Wayfinder routes
+import { dashboard } from '@/routes';
+import leaderboard from '@/routes/leaderboard';
+import profile from '@/routes/profile';
+import questionsRoutes from '@/routes/questions';
 
 // Props
 interface User {
@@ -223,13 +228,19 @@ interface Question {
     id: number;
     name: string;
     color: string;
+    icon: string;
   };
   resolution_time: string;
+  is_resolved: boolean;
+  correct_answer?: string;
   user_prediction?: {
+    id: number;
     choice: 'A' | 'B';
     bet_amount: number;
     potential_winnings: number;
-    multiplier_applied: number;
+    actual_winnings?: number;
+    is_correct?: boolean;
+    created_at?: string;
   };
 }
 
@@ -239,7 +250,7 @@ interface Prediction {
   bet_amount: number;
   potential_winnings: number;
   actual_winnings?: number;
-  is_correct?: boolean | null;
+  is_correct?: boolean;
   created_at: string;
   question: {
     id: number;
@@ -280,7 +291,8 @@ const allQuestionsAnswered = computed(() => {
 });
 
 // Methods
-const formatNumber = (num: number): string => {
+const formatNumber = (num: number | undefined): string => {
+  if (!num) return '0';
   if (num >= 1000000) {
     return (num / 1000000).toFixed(1) + 'M';
   } else if (num >= 1000) {
