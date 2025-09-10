@@ -124,6 +124,9 @@
         </div>
       </CardContent>
     </Card>
+    
+    <!-- Bottom Navigation -->
+    <BottomNavigation />
   </div>
 </template>
 
@@ -131,6 +134,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
 import LeaderboardTable from '@/components/LeaderboardTable.vue';
+import BottomNavigation from '@/components/BottomNavigation.vue';
 import { initializeTelegramMock } from '@/lib/telegram-mock';
 // Import Wayfinder routes
 import { dashboard } from '@/routes';
@@ -256,7 +260,7 @@ onMounted(() => {
 .leaderboard-page {
   min-height: 100vh;
   padding: 1rem;
-  padding-bottom: 2rem;
+  padding-bottom: 5rem; /* Space for bottom navigation */
 }
 
 .leaderboard-container {

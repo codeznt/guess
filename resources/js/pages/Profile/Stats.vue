@@ -195,6 +195,9 @@
         </Link>
       </Button>
     </div>
+    
+    <!-- Bottom Navigation -->
+    <BottomNavigation />
   </div>
 </template>
 
@@ -202,6 +205,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import { initializeTelegramMock } from '@/lib/telegram-mock';
+import BottomNavigation from '@/components/BottomNavigation.vue';
 // Import shadcn-vue components
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -359,6 +363,7 @@ onMounted(() => {
   min-height: 100vh;
   background: var(--tg-color-bg, #f8fafc);
   padding: 1rem;
+  padding-bottom: 5rem; /* Space for bottom navigation */
 }
 
 /* Header */

@@ -167,27 +167,9 @@
       </CardContent>
     </Card>
 
-    <!-- Quick Actions -->
-    <div class="quick-actions">
-      <Button as-child class="action-button" v-if="!allQuestionsAnswered">
-        <Link :href="questionsRoutes.daily.url()">
-          <IconTarget class="h-6 w-6 mb-2" />
-          Make Predictions
-        </Link>
-      </Button>
-      <Button variant="outline" as-child class="action-button">
-        <Link :href="leaderboard.index.url()">
-          <IconTrophy class="h-6 w-6 mb-2" />
-          Leaderboard
-        </Link>
-      </Button>
-      <Button variant="outline" as-child class="action-button">
-        <Link :href="profile.show.url()">
-          <IconUser class="h-6 w-6 mb-2" />
-          Profile
-        </Link>
-      </Button>
-    </div>
+    
+    <!-- Bottom Navigation -->
+    <BottomNavigation />
   </div>
 </template>
 
@@ -195,6 +177,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import PredictionCard from '@/components/PredictionCard.vue';
+import BottomNavigation from '@/components/BottomNavigation.vue';
 import { initializeTelegramMock } from '@/lib/telegram-mock';
 // Import shadcn-vue components
 import { Card, CardContent } from '@/components/ui/card';
@@ -358,7 +341,7 @@ onMounted(() => {
   min-height: 100vh;
   background: linear-gradient(to bottom, var(--tg-theme-bg-color, #f8fafc), #ffffff);
   padding: 1rem;
-  padding-bottom: 2rem;
+  padding-bottom: 5rem; /* Space for bottom navigation */
 }
 
 .dashboard-header {
@@ -584,19 +567,6 @@ onMounted(() => {
   background: #e2e8f0;
 }
 
-.quick-actions {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 1rem;
-}
-
-.action-button {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-  min-height: 5rem;
-}
 
 .btn {
   display: inline-flex;
@@ -660,8 +630,5 @@ onMounted(() => {
     flex-direction: column;
   }
   
-  .quick-actions {
-    grid-template-columns: 1fr 1fr;
-  }
 }
 </style>

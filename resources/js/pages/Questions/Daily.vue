@@ -156,6 +156,9 @@
         </div>
       </CardContent>
     </Card>
+    
+    <!-- Bottom Navigation -->
+    <BottomNavigation />
   </div>
 </template>
 
@@ -164,6 +167,7 @@ import { computed, onMounted, ref } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import PredictionCard from '@/components/PredictionCard.vue';
 import StreakDisplay from '@/components/StreakDisplay.vue';
+import BottomNavigation from '@/components/BottomNavigation.vue';
 import { initializeTelegramMock } from '@/lib/telegram-mock';
 // Import Wayfinder routes
 import { dashboard } from '@/routes';
@@ -319,7 +323,7 @@ onMounted(() => {
 .questions-page {
   min-height: 100vh;
   padding: 1rem;
-  padding-bottom: 2rem;
+  padding-bottom: 5rem; /* Space for bottom navigation */
 }
 
 .header-content {
