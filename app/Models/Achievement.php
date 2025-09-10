@@ -25,6 +25,7 @@ class Achievement extends Model
         'is_shareable',
         'earned_at',
         'shared_at',
+        'share_count',
     ];
 
     /**
@@ -35,6 +36,7 @@ class Achievement extends Model
     protected $casts = [
         'user_id' => 'integer',
         'points_value' => 'integer',
+        'share_count' => 'integer',
         'is_shareable' => 'boolean',
         'earned_at' => 'datetime',
         'shared_at' => 'datetime',

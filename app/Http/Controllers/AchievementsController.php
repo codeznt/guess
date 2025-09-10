@@ -75,7 +75,7 @@ class AchievementsController extends Controller
             // Handle platform-specific sharing logic
             $result = $this->handlePlatformShare($platform, $shareContent, $shareUrl, $user, $achievement);
 
-            return redirect()->route('profile')
+            return redirect()->route('profile.show')
                 ->with('success', 'Achievement shared successfully!')
                 ->with('shareUrl', $shareUrl)
                 ->with('shareContent', $shareContent)

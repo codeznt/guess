@@ -651,6 +651,30 @@ class TelegramService
     }
 
     /**
+     * Generate share data for Telegram sharing.
+     */
+    public function generateShareData(string $message, string $shareUrl, $achievement): array
+    {
+        return [
+            'text' => $message,
+            'url' => $shareUrl,
+            'parse_mode' => 'HTML',
+            'reply_markup' => [
+                'inline_keyboard' => [[
+                    [
+                        'text' => '🎮 Play Game',
+                        'url' => $this->webAppUrl
+                    ],
+                    [
+                        'text' => '🏆 View Achievement',
+                        'url' => $shareUrl
+                    ]
+                ]]
+            ]
+        ];
+    }
+
+    /**
      * Clear user cache.
      */
     private function clearUserCache(int $telegramId): void

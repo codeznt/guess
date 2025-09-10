@@ -59,6 +59,9 @@ it('can get daily prediction questions', function () {
                 ->has('option_a')
                 ->has('option_b')
                 ->has('resolution_time')
+                ->has('is_resolved')
+                ->has('correct_answer')
+                ->has('user_prediction')
                 ->where('category.name', fn ($name) => in_array($name, ['Crypto', 'Sports']))
             )
             ->where('userCoins', 1000)
@@ -66,6 +69,8 @@ it('can get daily prediction questions', function () {
                 ->has('date')
                 ->has('total_questions')
                 ->where('total_questions', 12)
+                ->has('predictions_made')
+                ->has('remaining_questions')
             )
         );
 });

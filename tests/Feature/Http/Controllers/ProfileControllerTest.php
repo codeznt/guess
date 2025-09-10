@@ -49,6 +49,8 @@ it('can get user profile statistics', function () {
                     ->where('id', $user->id)
                     ->where('first_name', 'John')
                     ->where('username', 'johnsmith')
+                    ->where('last_name', null)
+                    ->where('telegram_id', 123456789)
                 )
                 ->where('dailyCoins', 750)
                 ->where('totalPredictions', 247)
@@ -57,12 +59,18 @@ it('can get user profile statistics', function () {
                 ->where('currentStreak', 7)
                 ->where('bestStreak', 23)
                 ->where('totalEarnings', 0) // Will be calculated from predictions
+                ->where('totalWagered', 0)
+                ->where('netProfit', 0)
                 ->has('achievements', 2)
                 ->has('achievements.0', fn (Assert $achievement) => $achievement
-                    ->where('title', 'Perfect Day')
-                    ->where('description', 'Achieved 100% accuracy for a day')
-                    ->where('icon', 'trophy')
+                    ->has('id')
+                    ->where('title', 'Hot Streak')
+                    ->where('description', 'Achieved 5-day prediction streak')
+                    ->where('icon', 'fire')
+                    ->has('points_value')
+                    ->has('achievement_type')
                     ->has('earned_at')
+                    ->has('earned')
                 )
             )
         );
@@ -81,7 +89,7 @@ it('calculates accuracy percentage correctly', function () {
 
     $response->assertStatus(200)
         ->assertInertia(fn (Assert $page) => $page
-            ->where('userStats.accuracyPercentage', 0.0)
+            ->where('userStats.accuracyPercentage', 0)
         );
 
     // Test with perfect accuracy
@@ -96,7 +104,7 @@ it('calculates accuracy percentage correctly', function () {
 
     $response->assertStatus(200)
         ->assertInertia(fn (Assert $page) => $page
-            ->where('userStats.accuracyPercentage', 100.0)
+            ->where('userStats.accuracyPercentage', 100)
         );
 });
 
@@ -173,6 +181,7 @@ it('includes streak information and milestones', function () {
                 ->where('bestStreak', 25)
                 ->where('streakMultiplier', 1.12) // 1 + (12 * 0.01)
                 ->where('nextMilestone', 15) // Next milestone after 12
+                ->has('milestones')
             )
         );
 });

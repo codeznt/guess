@@ -808,6 +808,21 @@ class AchievementService
     }
 
     /**
+     * Log share activity for analytics.
+     */
+    public function logShareActivity(User $user, Achievement $achievement, string $platform): void
+    {
+        // Log the share activity - could be stored in database or sent to analytics service
+        Log::info('Achievement shared', [
+            'user_id' => $user->id,
+            'achievement_id' => $achievement->id,
+            'achievement_type' => $achievement->achievement_type,
+            'platform' => $platform,
+            'shared_at' => now(),
+        ]);
+    }
+
+    /**
      * Clear user's achievement cache.
      */
     private function clearUserAchievementCache(int $userId): void
