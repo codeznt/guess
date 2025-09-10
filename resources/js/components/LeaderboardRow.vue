@@ -5,31 +5,27 @@
       <div class="rank-container">
         <span class="rank-number">{{ displayRank }}</span>
         <div v-if="showTrend && entry.trend" class="trend-indicator" :class="entry.trend">
-          <span class="trend-icon">{{ trendIcon }}</span>
+          <IconTrendingUp v-if="entry.trend === 'up'" class="h-4 w-4" />
+          <IconTrendingDown v-else-if="entry.trend === 'down'" class="h-4 w-4" />
+          <IconMinus v-else-if="entry.trend === 'same'" class="h-4 w-4" />
         </div>
       </div>
-      <div v-if="isTopThree" class="rank-badge" :class="rankBadgeClass">
-        {{ rankBadgeText }}
-      </div>
+      <Badge v-if="isTopThree" :variant="rankBadgeVariant" class="text-xs">
+        <IconTrophy class="h-3 w-3 mr-1" />
+        {{ displayRank }}
+      </Badge>
     </div>
 
     <!-- Player Info -->
     <div class="player-cell">
-      <div class="player-avatar">
-        <img 
-          v-if="entry.avatar_url" 
-          :src="entry.avatar_url" 
-          :alt="playerDisplayName"
-          class="avatar-image"
-        />
-        <div v-else class="avatar-fallback">
-          {{ avatarInitial }}
-        </div>
-      </div>
+      <Avatar class="h-10 w-10">
+        <AvatarImage v-if="entry.avatar_url" :src="entry.avatar_url" :alt="playerDisplayName" />
+        <AvatarFallback>{{ avatarInitial }}</AvatarFallback>
+      </Avatar>
       <div class="player-info">
         <div class="player-name">
           {{ playerDisplayName }}
-          <span v-if="isCurrentUser" class="you-badge">You</span>
+          <Badge v-if="isCurrentUser" size="sm" class="ml-2 text-xs">You</Badge>
         </div>
         <div class="player-username" v-if="entry.username">
           @{{ entry.username }}
@@ -56,7 +52,7 @@
     <!-- Winnings -->
     <div class="winnings-cell">
       <div class="winnings-amount">
-        <span class="winnings-icon">🪙</span>
+        <IconCoins class="h-4 w-4 text-yellow-500" />
         <span class="winnings-value">{{ formattedWinnings }}</span>
       </div>
     </div>
@@ -65,6 +61,11 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+// Import shadcn-vue components
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+// Import Tabler icons
+import { IconTrophy, IconCoins, IconTrendingUp, IconTrendingDown, IconMinus } from '@tabler/icons-vue';
 
 // LeaderboardEntry interface
 interface LeaderboardEntry {
@@ -103,32 +104,15 @@ const isTopThree = computed(() => {
   return displayRank.value <= 3;
 });
 
-const rankBadgeClass = computed(() => {
+const rankBadgeVariant = computed(() => {
   switch (displayRank.value) {
-    case 1: return 'gold';
-    case 2: return 'silver';
-    case 3: return 'bronze';
-    default: return '';
+    case 1: return 'default' as const; // Gold
+    case 2: return 'secondary' as const; // Silver  
+    case 3: return 'outline' as const; // Bronze
+    default: return 'outline' as const;
   }
 });
 
-const rankBadgeText = computed(() => {
-  switch (displayRank.value) {
-    case 1: return '🥇';
-    case 2: return '🥈';
-    case 3: return '🥉';
-    default: return '';
-  }
-});
-
-const trendIcon = computed(() => {
-  switch (props.entry.trend) {
-    case 'up': return '↗️';
-    case 'down': return '↘️';
-    case 'same': return '→';
-    default: return '';
-  }
-});
 
 const playerDisplayName = computed(() => {
   const firstName = props.entry.first_name;

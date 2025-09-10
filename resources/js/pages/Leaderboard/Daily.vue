@@ -1,69 +1,76 @@
 <template>
   <div class="leaderboard-page">
     <!-- Header -->
-    <div class="page-header">
-      <h1 class="page-title">🏆 Leaderboard</h1>
-      <p class="page-subtitle">See how you rank against other players</p>
-      
-      <!-- Period Tabs -->
-      <div class="period-tabs">
-        <button 
-          v-for="period in periods" 
-          :key="period.value"
-          @click="activePeriod = period.value"
-          class="period-tab"
-          :class="{ 'active': activePeriod === period.value }"
-        >
-          {{ period.label }}
-        </button>
-      </div>
-    </div>
+    <Card class="mb-6">
+      <CardHeader>
+        <CardTitle class="flex items-center gap-2">
+          <IconTrophy class="h-6 w-6" />
+          Leaderboard
+        </CardTitle>
+        <CardDescription>See how you rank against other players</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <!-- Period Tabs -->
+        <div class="flex p-1 bg-muted rounded-lg">
+          <button 
+            v-for="period in periods" 
+            :key="period.value"
+            @click="activePeriod = period.value"
+            :class="[
+              'flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all',
+              activePeriod === period.value 
+                ? 'bg-background text-foreground shadow-sm' 
+                : 'text-muted-foreground hover:text-foreground'
+            ]"
+          >
+            {{ period.label }}
+          </button>
+        </div>
+      </CardContent>
+    </Card>
 
     <!-- User Position Card -->
-    <div class="user-position-card" v-if="userPosition">
-      <div class="position-header">
-        <span class="position-label">Your Position</span>
-        <span class="period-info">{{ currentPeriodLabel }}</span>
-      </div>
-      <div class="position-content">
-        <div class="user-rank">
-          <div class="rank-number">#{{ userPosition.rank }}</div>
-          <div class="rank-label">Rank</div>
+    <Card v-if="userPosition" class="mb-6 bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
+      <CardContent class="pt-6">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <IconUser class="h-5 w-5" />
+            <span class="font-medium">Your Position</span>
+          </div>
+          <Badge variant="outline">{{ currentPeriodLabel }}</Badge>
         </div>
-        <div class="user-info">
-          <div class="user-avatar">
-            <img 
-              v-if="user.avatar" 
-              :src="user.avatar" 
-              :alt="user.name"
-            >
-            <div v-else class="avatar-placeholder">
-              {{ user.name.charAt(0).toUpperCase() }}
+        <div class="flex items-center gap-4">
+          <div class="text-center">
+            <div class="text-3xl font-bold text-primary">#{{ userPosition.rank }}</div>
+            <div class="text-sm text-muted-foreground">Rank</div>
+          </div>
+          <div class="flex items-center gap-3 flex-1">
+            <Avatar class="h-12 w-12 border-2 border-primary/20">
+              <AvatarImage v-if="user.avatar" :src="user.avatar" :alt="user.name" />
+              <AvatarFallback>{{ user.name.charAt(0).toUpperCase() }}</AvatarFallback>
+            </Avatar>
+            <div>
+              <div class="font-semibold">{{ user.name }}</div>
+              <div class="text-sm text-muted-foreground">
+                {{ userPosition.score }} points • {{ userPosition.accuracy }}% accuracy
+              </div>
             </div>
           </div>
-          <div class="user-details">
-            <div class="user-name">{{ user.name }}</div>
-            <div class="user-stats">
-              {{ userPosition.score }} points • {{ userPosition.accuracy }}% accuracy
+          <div v-if="userPosition.change" class="text-center">
+            <div class="flex items-center gap-1" :class="{
+              'text-green-600': userPosition.change > 0,
+              'text-red-600': userPosition.change < 0,
+              'text-muted-foreground': userPosition.change === 0
+            }">
+              <IconTrendingUp v-if="userPosition.change > 0" class="h-4 w-4" />
+              <IconTrendingDown v-else-if="userPosition.change < 0" class="h-4 w-4" />
+              <IconMinus v-else class="h-4 w-4" />
+              <span class="font-medium">{{ Math.abs(userPosition.change) }}</span>
             </div>
           </div>
         </div>
-        <div class="position-change" v-if="userPosition.change">
-          <div 
-            class="change-indicator"
-            :class="{ 
-              'positive': userPosition.change > 0,
-              'negative': userPosition.change < 0 
-            }"
-          >
-            <span v-if="userPosition.change > 0">↗️</span>
-            <span v-else-if="userPosition.change < 0">↘️</span>
-            <span v-else>➡️</span>
-            {{ Math.abs(userPosition.change) }}
-          </div>
-        </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
 
     <!-- Leaderboard Table -->
     <div class="leaderboard-container">
@@ -77,39 +84,46 @@
     </div>
 
     <!-- Stats Summary -->
-    <div class="stats-summary">
-      <h3 class="stats-title">📊 Competition Stats</h3>
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon">👥</div>
-          <div class="stat-content">
-            <div class="stat-value">{{ formatNumber(stats.total_players) }}</div>
-            <div class="stat-label">Total Players</div>
+    <Card class="mt-6">
+      <CardHeader>
+        <CardTitle class="flex items-center gap-2">
+          <IconChartBar class="h-5 w-5" />
+          Competition Stats
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div class="flex items-center gap-3 p-4 border rounded-lg">
+            <IconUsers class="h-8 w-8 text-blue-500" />
+            <div>
+              <div class="text-2xl font-bold">{{ formatNumber(stats.total_players) }}</div>
+              <div class="text-sm text-muted-foreground">Total Players</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 p-4 border rounded-lg">
+            <IconTarget class="h-8 w-8 text-green-500" />
+            <div>
+              <div class="text-2xl font-bold">{{ formatNumber(stats.total_predictions) }}</div>
+              <div class="text-sm text-muted-foreground">Predictions Made</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 p-4 border rounded-lg">
+            <IconCoins class="h-8 w-8 text-yellow-500" />
+            <div>
+              <div class="text-2xl font-bold">{{ formatNumber(stats.total_winnings) }}</div>
+              <div class="text-sm text-muted-foreground">Coins Won</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 p-4 border rounded-lg">
+            <IconTrendingUp class="h-8 w-8 text-purple-500" />
+            <div>
+              <div class="text-2xl font-bold">{{ stats.average_accuracy }}%</div>
+              <div class="text-sm text-muted-foreground">Avg Accuracy</div>
+            </div>
           </div>
         </div>
-        <div class="stat-card">
-          <div class="stat-icon">🎯</div>
-          <div class="stat-content">
-            <div class="stat-value">{{ formatNumber(stats.total_predictions) }}</div>
-            <div class="stat-label">Predictions Made</div>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">🪙</div>
-          <div class="stat-content">
-            <div class="stat-value">{{ formatNumber(stats.total_winnings) }}</div>
-            <div class="stat-label">Coins Won</div>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">📈</div>
-          <div class="stat-content">
-            <div class="stat-value">{{ stats.average_accuracy }}%</div>
-            <div class="stat-label">Avg Accuracy</div>
-          </div>
-        </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   </div>
 </template>
 
@@ -120,6 +134,12 @@ import LeaderboardTable from '@/components/LeaderboardTable.vue';
 import { initializeTelegramMock } from '@/lib/telegram-mock';
 // Import Wayfinder routes
 import { dashboard } from '@/routes';
+// Import shadcn-vue components
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+// Import Tabler icons
+import { IconTrophy, IconUser, IconTrendingUp, IconTrendingDown, IconMinus, IconChartBar, IconUsers, IconTarget, IconCoins } from '@tabler/icons-vue';
 
 // Props
 interface User {
@@ -235,272 +255,24 @@ onMounted(() => {
 <style scoped>
 .leaderboard-page {
   min-height: 100vh;
-  background: linear-gradient(to bottom, var(--tg-theme-bg-color, #f8fafc), #ffffff);
   padding: 1rem;
   padding-bottom: 2rem;
-}
-
-.page-header {
-  background: white;
-  border-radius: 1rem;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-
-.page-title {
-  font-size: 1.75rem;
-  font-weight: bold;
-  color: var(--tg-theme-text-color, #1f2937);
-  margin: 0 0 0.5rem 0;
-}
-
-.page-subtitle {
-  color: #6b7280;
-  margin: 0 0 1.5rem 0;
-}
-
-.period-tabs {
-  display: flex;
-  gap: 0.5rem;
-  background: #f8fafc;
-  padding: 0.25rem;
-  border-radius: 0.75rem;
-}
-
-.period-tab {
-  flex: 1;
-  padding: 0.75rem 1rem;
-  border: none;
-  background: transparent;
-  border-radius: 0.5rem;
-  font-weight: 600;
-  color: #6b7280;
-  transition: all 0.2s;
-  cursor: pointer;
-}
-
-.period-tab.active {
-  background: white;
-  color: var(--tg-theme-text-color, #1f2937);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.period-tab:not(.active):hover {
-  color: var(--tg-theme-text-color, #1f2937);
-}
-
-.user-position-card {
-  background: linear-gradient(135deg, var(--tg-theme-button-color, #2481cc), #1d4ed8);
-  border-radius: 1rem;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  color: white;
-}
-
-.position-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.position-label {
-  font-weight: 600;
-  opacity: 0.9;
-}
-
-.period-info {
-  font-size: 0.875rem;
-  opacity: 0.8;
-}
-
-.position-content {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.user-rank {
-  text-align: center;
-}
-
-.rank-number {
-  font-size: 2rem;
-  font-weight: bold;
-  line-height: 1;
-}
-
-.rank-label {
-  font-size: 0.75rem;
-  opacity: 0.8;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex: 1;
-}
-
-.user-avatar {
-  width: 3rem;
-  height: 3rem;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-}
-
-.user-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.avatar-placeholder {
-  width: 100%;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.25rem;
-  font-weight: bold;
-}
-
-.user-details {
-  flex: 1;
-}
-
-.user-name {
-  font-weight: bold;
-  font-size: 1.125rem;
-  margin-bottom: 0.25rem;
-}
-
-.user-stats {
-  font-size: 0.875rem;
-  opacity: 0.9;
-}
-
-.position-change {
-  text-align: center;
-}
-
-.change-indicator {
-  font-size: 0.875rem;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.change-indicator.positive {
-  color: #10b981;
-}
-
-.change-indicator.negative {
-  color: #ef4444;
 }
 
 .leaderboard-container {
   margin-bottom: 2rem;
 }
 
-.stats-summary {
-  background: white;
-  border-radius: 1rem;
-  padding: 1.5rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-
-.stats-title {
-  font-size: 1.25rem;
-  font-weight: bold;
-  color: var(--tg-theme-text-color, #1f2937);
-  margin: 0 0 1rem 0;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 1rem;
-}
-
-.stat-card {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 1rem;
-  background: #f8fafc;
-  border-radius: 0.75rem;
-  border: 1px solid #e5e7eb;
-}
-
-.stat-icon {
-  font-size: 1.5rem;
-  flex-shrink: 0;
-}
-
-.stat-content {
-  flex: 1;
-}
-
-.stat-value {
-  font-size: 1.25rem;
-  font-weight: bold;
-  color: var(--tg-theme-text-color, #1f2937);
-}
-
-.stat-label {
-  font-size: 0.75rem;
-  color: #6b7280;
-  margin-top: 0.125rem;
-}
-
+/* Responsive Design */
 @media (max-width: 768px) {
   .leaderboard-page {
     padding: 0.75rem;
-  }
-  
-  .page-header {
-    padding: 1rem;
-  }
-  
-  .page-title {
-    font-size: 1.5rem;
-  }
-  
-  .position-content {
-    flex-wrap: wrap;
-    gap: 0.75rem;
-  }
-  
-  .user-info {
-    order: -1;
-    width: 100%;
-  }
-  
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (max-width: 480px) {
   .leaderboard-page {
     padding: 0.5rem;
-  }
-  
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .stat-card {
-    padding: 0.75rem;
-  }
-  
-  .user-position-card {
-    padding: 1rem;
   }
 }
 </style>

@@ -1,57 +1,54 @@
 <template>
   <div class="dashboard">
     <!-- Header Section -->
-    <div class="dashboard-header">
-      <div class="user-info">
-        <div class="avatar-container">
-          <img 
-            v-if="user.avatar" 
-            :src="user.avatar" 
-            :alt="user.name"
-            class="user-avatar"
-          >
-          <div v-else class="user-avatar-placeholder">
-            {{ user?.name ? user.name.charAt(0).toUpperCase() : '?' }}
+    <Card class="dashboard-header">
+      <CardContent class="pt-6">
+        <div class="user-info">
+          <Avatar class="user-avatar">
+            <AvatarImage v-if="user.avatar" :src="user.avatar" :alt="user.name" />
+            <AvatarFallback>{{ user?.name ? user.name.charAt(0).toUpperCase() : '?' }}</AvatarFallback>
+          </Avatar>
+          <div class="user-details">
+            <h1 class="user-name">{{ user.name }}</h1>
+            <div class="user-coins">
+              <IconCoins class="coin-icon h-5 w-5" />
+              <span class="coins-amount">{{ formatNumber(user.daily_coins) }}</span>
+              <span class="coins-label">coins</span>
+            </div>
           </div>
         </div>
-        <div class="user-details">
-          <h1 class="user-name">{{ user.name }}</h1>
-          <div class="user-coins">
-            <span class="coin-icon">🪙</span>
-            <span class="coins-amount">{{ formatNumber(user.daily_coins) }}</span>
-            <span class="coins-label">coins</span>
+        
+        <!-- Quick Stats -->
+        <div class="quick-stats">
+          <div class="stat-item">
+            <div class="stat-value">{{ user.current_streak }}</div>
+            <div class="stat-label">Streak</div>
+            <div class="stat-multiplier">{{ user.streak_multiplier }}x</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">{{ userStats.accuracy_percentage }}%</div>
+            <div class="stat-label">Accuracy</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">#{{ userStats.rank || '—' }}</div>
+            <div class="stat-label">Rank</div>
           </div>
         </div>
-      </div>
-      
-      <!-- Quick Stats -->
-      <div class="quick-stats">
-        <div class="stat-item">
-          <div class="stat-value">{{ user.current_streak }}</div>
-          <div class="stat-label">Streak</div>
-          <div class="stat-multiplier">{{ user.streak_multiplier }}x</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-value">{{ userStats.accuracy_percentage }}%</div>
-          <div class="stat-label">Accuracy</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-value">#{{ userStats.rank || '—' }}</div>
-          <div class="stat-label">Rank</div>
-        </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
 
     <!-- Daily Questions Section -->
     <div class="daily-questions-section">
       <div class="section-header">
-        <h2 class="section-title">
-          🎯 Today's Questions
+        <h2 class="section-title flex items-center gap-2">
+          <IconTarget class="h-6 w-6" />
+          Today's Questions
         </h2>
         <div class="questions-meta">
           <span class="questions-count">{{ questionsAnswered }} / {{ totalQuestions }}</span>
-          <div class="time-remaining">
-            ⏰ {{ timeUntilReset }}
+          <div class="time-remaining flex items-center gap-1">
+            <IconClock class="h-4 w-4" />
+            {{ timeUntilReset }}
           </div>
         </div>
       </div>
@@ -71,74 +68,74 @@
       </div>
 
       <!-- Empty State -->
-      <div v-else class="empty-state">
-        <div class="empty-icon">📅</div>
-        <h3 class="empty-title">No Questions Today</h3>
-        <p class="empty-description">
-          New questions will be available soon. Check back later!
-        </p>
-      </div>
+      <Card v-else class="empty-state">
+        <CardContent class="p-12 text-center">
+          <IconCalendar class="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+          <h3 class="empty-title">No Questions Today</h3>
+          <p class="empty-description">
+            New questions will be available soon. Check back later!
+          </p>
+        </CardContent>
+      </Card>
 
       <!-- All Questions Answered -->
-      <div v-if="allQuestionsAnswered && questions.length > 0" class="completed-state">
-        <div class="completed-icon">✅</div>
-        <h3 class="completed-title">All Done for Today!</h3>
-        <p class="completed-description">
-          You've answered all today's questions. Come back tomorrow for new challenges!
-        </p>
-        <div class="completed-actions">
-          <Link 
-            :href="leaderboard.index.url()" 
-            class="btn btn-secondary"
-          >
-            🏆 View Leaderboard
-          </Link>
-          <Link 
-            :href="profile.show.url()" 
-            class="btn btn-primary"
-          >
-            👤 View Stats
-          </Link>
-        </div>
-      </div>
+      <Card v-if="allQuestionsAnswered && questions.length > 0" class="completed-state">
+        <CardContent class="p-12 text-center">
+          <IconCheck class="h-16 w-16 mx-auto mb-4 text-green-500" />
+          <h3 class="completed-title">All Done for Today!</h3>
+          <p class="completed-description">
+            You've answered all today's questions. Come back tomorrow for new challenges!
+          </p>
+          <div class="completed-actions">
+            <Button variant="outline" as-child>
+              <Link :href="leaderboard.index.url()">
+                <IconTrophy class="h-4 w-4 mr-2" />
+                View Leaderboard
+              </Link>
+            </Button>
+            <Button as-child>
+              <Link :href="profile.show.url()">
+                <IconUser class="h-4 w-4 mr-2" />
+                View Stats
+              </Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
 
     <!-- Recent Activity -->
-    <div class="recent-activity" v-if="recentPredictions.length > 0">
-      <h3 class="activity-title">
-        📈 Recent Activity
-      </h3>
-      <div class="activity-list">
-        <div 
-          v-for="prediction in recentPredictions.slice(0, 3)" 
-          :key="prediction.id"
-          class="activity-item"
-          :class="{ 
-            'activity-correct': prediction.is_correct === true,
-            'activity-incorrect': prediction.is_correct === false,
-            'activity-pending': prediction.is_correct === null
-          }"
-        >
-          <div class="activity-icon-container">
-            <span 
-              v-if="prediction.is_correct === true" 
-              class="activity-result-icon correct"
-            >
-              ✅
-            </span>
-            <span 
-              v-else-if="prediction.is_correct === false" 
-              class="activity-result-icon incorrect"
-            >
-              ❌
-            </span>
-            <span 
-              v-else 
-              class="activity-result-icon pending"
-            >
-              ⏳
-            </span>
-          </div>
+    <Card class="recent-activity" v-if="recentPredictions.length > 0">
+      <CardContent class="pt-6">
+        <h3 class="activity-title flex items-center gap-2">
+          <IconTrendingUp class="h-6 w-6" />
+          Recent Activity
+        </h3>
+        <div class="activity-list">
+          <div 
+            v-for="prediction in recentPredictions.slice(0, 3)" 
+            :key="prediction.id"
+            class="activity-item"
+            :class="{ 
+              'activity-correct': prediction.is_correct === true,
+              'activity-incorrect': prediction.is_correct === false,
+              'activity-pending': prediction.is_correct === null
+            }"
+          >
+            <div class="activity-icon-container">
+              <IconCheck 
+                v-if="prediction.is_correct === true" 
+                class="h-6 w-6 text-green-500"
+              />
+              <IconX 
+                v-else-if="prediction.is_correct === false" 
+                class="h-6 w-6 text-red-500"
+              />
+              <IconClock 
+                v-else 
+                class="h-6 w-6 text-orange-500"
+              />
+            </div>
           <div class="activity-content">
             <div class="activity-question">{{ truncateText(prediction.question.title, 50) }}</div>
             <div class="activity-details">
@@ -158,40 +155,38 @@
               Pending
             </div>
           </div>
+          </div>
         </div>
-      </div>
-      <Link 
-        :href="profile.show.url()" 
-        class="view-all-activity"
-      >
-        View All Activity →
-      </Link>
-    </div>
+        <Link 
+          :href="profile.show.url()" 
+          class="view-all-activity flex items-center justify-center gap-2"
+        >
+          View All Activity
+          <IconArrowRight class="h-4 w-4" />
+        </Link>
+      </CardContent>
+    </Card>
 
     <!-- Quick Actions -->
     <div class="quick-actions">
-      <Link 
-        :href="questionsRoutes.daily.url()" 
-        class="action-button primary"
-        v-if="!allQuestionsAnswered"
-      >
-        <span class="action-icon">🎯</span>
-        <span>Make Predictions</span>
-      </Link>
-      <Link 
-        :href="leaderboard.index.url()" 
-        class="action-button secondary"
-      >
-        <span class="action-icon">🏆</span>
-        <span>Leaderboard</span>
-      </Link>
-      <Link 
-        :href="profile.show.url()" 
-        class="action-button secondary"
-      >
-        <span class="action-icon">👤</span>
-        <span>Profile</span>
-      </Link>
+      <Button as-child class="action-button" v-if="!allQuestionsAnswered">
+        <Link :href="questionsRoutes.daily.url()">
+          <IconTarget class="h-6 w-6 mb-2" />
+          Make Predictions
+        </Link>
+      </Button>
+      <Button variant="outline" as-child class="action-button">
+        <Link :href="leaderboard.index.url()">
+          <IconTrophy class="h-6 w-6 mb-2" />
+          Leaderboard
+        </Link>
+      </Button>
+      <Button variant="outline" as-child class="action-button">
+        <Link :href="profile.show.url()">
+          <IconUser class="h-6 w-6 mb-2" />
+          Profile
+        </Link>
+      </Button>
     </div>
   </div>
 </template>
@@ -201,6 +196,12 @@ import { computed, onMounted, ref } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import PredictionCard from '@/components/PredictionCard.vue';
 import { initializeTelegramMock } from '@/lib/telegram-mock';
+// Import shadcn-vue components
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+// Import Tabler icons
+import { IconTarget, IconCoins, IconClock, IconCalendar, IconCheck, IconTrophy, IconUser, IconTrendingUp, IconX, IconArrowRight } from '@tabler/icons-vue';
 // Import Wayfinder routes
 import { dashboard } from '@/routes';
 import leaderboard from '@/routes/leaderboard';
@@ -361,11 +362,7 @@ onMounted(() => {
 }
 
 .dashboard-header {
-  background: white;
-  border-radius: 1rem;
-  padding: 1.5rem;
   margin-bottom: 1.5rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .user-info {
@@ -378,22 +375,7 @@ onMounted(() => {
 .user-avatar {
   width: 4rem;
   height: 4rem;
-  border-radius: 50%;
-  object-fit: cover;
   border: 3px solid var(--tg-theme-button-color, #2481cc);
-}
-
-.user-avatar-placeholder {
-  width: 4rem;
-  height: 4rem;
-  border-radius: 50%;
-  background: var(--tg-theme-button-color, #2481cc);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  font-weight: bold;
 }
 
 .user-details {
@@ -416,7 +398,7 @@ onMounted(() => {
 }
 
 .coin-icon {
-  font-size: 1.25rem;
+  color: #f59e0b;
 }
 
 .coins-amount {
@@ -494,17 +476,7 @@ onMounted(() => {
 
 .empty-state,
 .completed-state {
-  text-align: center;
-  padding: 3rem 1.5rem;
-  background: white;
-  border-radius: 1rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-
-.empty-icon,
-.completed-icon {
-  font-size: 4rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .empty-title,
@@ -529,11 +501,7 @@ onMounted(() => {
 }
 
 .recent-activity {
-  background: white;
-  border-radius: 1rem;
-  padding: 1.5rem;
   margin-bottom: 1.5rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .activity-title {
@@ -561,9 +529,6 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
-.activity-result-icon {
-  font-size: 1.5rem;
-}
 
 .activity-content {
   flex: 1;
@@ -630,36 +595,7 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
-  padding: 1rem;
-  border-radius: 0.75rem;
-  text-decoration: none;
-  font-weight: 600;
-  transition: all 0.2s;
-}
-
-.action-button.primary {
-  background: var(--tg-theme-button-color, #2481cc);
-  color: white;
-}
-
-.action-button.primary:hover {
-  background: #1d4ed8;
-  transform: translateY(-1px);
-}
-
-.action-button.secondary {
-  background: white;
-  color: var(--tg-theme-text-color, #1f2937);
-  border: 1px solid #e5e7eb;
-}
-
-.action-button.secondary:hover {
-  background: #f8fafc;
-  transform: translateY(-1px);
-}
-
-.action-icon {
-  font-size: 1.5rem;
+  min-height: 5rem;
 }
 
 .btn {

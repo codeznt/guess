@@ -1,19 +1,21 @@
 <template>
-  <div class="streak-display" :class="streakClass">
+  <Card class="streak-display" :class="streakClass">
     <!-- Streak Header -->
-    <div class="streak-header">
-      <div class="streak-icon-container">
-        <span class="streak-icon">{{ streakIcon }}</span>
-        <div v-if="currentStreak > 0" class="streak-glow"></div>
+    <CardHeader class="streak-header">
+      <div class="flex items-center gap-4">
+        <div class="streak-icon-container">
+          <component :is="streakIconComponent" class="h-10 w-10" :class="streakIconClass" />
+          <div v-if="currentStreak > 0" class="streak-glow"></div>
+        </div>
+        <div class="streak-info flex-1">
+          <CardTitle class="streak-title">{{ streakTitle }}</CardTitle>
+          <CardDescription class="streak-subtitle">{{ streakSubtitle }}</CardDescription>
+        </div>
       </div>
-      <div class="streak-info">
-        <h3 class="streak-title">{{ streakTitle }}</h3>
-        <p class="streak-subtitle">{{ streakSubtitle }}</p>
-      </div>
-    </div>
+    </CardHeader>
 
     <!-- Current Streak -->
-    <div class="current-streak">
+    <CardContent class="current-streak">
       <div class="streak-number-container">
         <span class="streak-number">{{ currentStreak }}</span>
         <span class="streak-label">{{ currentStreak === 1 ? 'Day' : 'Days' }}</span>
@@ -21,46 +23,41 @@
       
       <!-- Streak Progress Bar -->
       <div class="streak-progress">
-        <div class="progress-bar">
-          <div 
-            class="progress-fill" 
-            :style="{ width: `${progressPercentage}%` }"
-          ></div>
-        </div>
+        <Progress :model-value="progressPercentage" class="h-2" />
         <div class="progress-info">
           <span class="progress-current">{{ currentStreak }}</span>
           <span class="progress-target">{{ nextMilestone }}</span>
         </div>
       </div>
-    </div>
+    </CardContent>
 
     <!-- Streak Stats -->
-    <div class="streak-stats">
+    <CardContent class="streak-stats border-t">
       <div class="stat-item">
-        <span class="stat-icon">⭐</span>
+        <IconStar class="stat-icon h-6 w-6 text-yellow-500" />
         <div class="stat-content">
           <span class="stat-value">{{ bestStreak }}</span>
           <span class="stat-label">Best Streak</span>
         </div>
       </div>
       <div class="stat-item">
-        <span class="stat-icon">🎯</span>
+        <IconTarget class="stat-icon h-6 w-6 text-blue-500" />
         <div class="stat-content">
           <span class="stat-value">{{ totalCorrect }}</span>
           <span class="stat-label">Total Correct</span>
         </div>
       </div>
       <div class="stat-item">
-        <span class="stat-icon">🏆</span>
+        <IconTrophy class="stat-icon h-6 w-6 text-green-500" />
         <div class="stat-content">
           <span class="stat-value">{{ streakBonus }}x</span>
           <span class="stat-label">Streak Bonus</span>
         </div>
       </div>
-    </div>
+    </CardContent>
 
     <!-- Streak Milestones -->
-    <div v-if="showMilestones" class="streak-milestones">
+    <CardContent v-if="showMilestones" class="streak-milestones border-t">
       <h4 class="milestones-title">Streak Milestones</h4>
       <div class="milestones-grid">
         <div 
@@ -69,76 +66,87 @@
           class="milestone-item"
           :class="{ 'achieved': milestone.achieved, 'next': milestone.isNext }"
         >
-          <div class="milestone-icon">{{ milestone.icon }}</div>
+          <component :is="milestone.iconComponent" class="milestone-icon h-6 w-6" :class="milestone.iconClass" />
           <div class="milestone-content">
             <span class="milestone-days">{{ milestone.days }} days</span>
             <span class="milestone-title">{{ milestone.title }}</span>
             <span class="milestone-bonus">{{ milestone.bonus }}x bonus</span>
           </div>
-          <div v-if="milestone.achieved" class="milestone-checkmark">✓</div>
+          <IconCheck v-if="milestone.achieved" class="milestone-checkmark h-5 w-5 text-green-500" />
         </div>
       </div>
-    </div>
+    </CardContent>
 
     <!-- Streak Actions -->
-    <div class="streak-actions">
-      <button 
+    <CardContent class="streak-actions border-t">
+      <Button 
         v-if="canContinueToday && !todayPredicted"
         @click="goToQuestions" 
-        class="action-button primary"
+        class="action-button"
       >
-        <span class="button-icon">🔥</span>
-        <span class="button-text">Continue Streak</span>
-      </button>
+        <IconFlame class="h-5 w-5 mr-2" />
+        Continue Streak
+      </Button>
       
-      <button 
+      <Button 
         v-if="currentStreak === 0"
         @click="goToQuestions" 
-        class="action-button secondary"
+        variant="outline"
+        class="action-button"
       >
-        <span class="button-icon">🚀</span>
-        <span class="button-text">Start New Streak</span>
-      </button>
+        <IconRocket class="h-5 w-5 mr-2" />
+        Start New Streak
+      </Button>
       
-      <button 
+      <Button 
         v-if="currentStreak > 0 && showShare"
         @click="shareStreak" 
-        class="action-button share"
+        variant="outline"
+        class="action-button"
       >
-        <span class="button-icon">📤</span>
-        <span class="button-text">Share Streak</span>
-      </button>
-    </div>
+        <IconShare class="h-5 w-5 mr-2" />
+        Share Streak
+      </Button>
+    </CardContent>
 
     <!-- Streak Tips -->
-    <div v-if="showTips" class="streak-tips">
-      <div class="tip-header">
-        <span class="tip-icon">💡</span>
-        <span class="tip-title">Streak Tips</span>
+    <CardContent v-if="showTips" class="streak-tips border-t bg-muted/50">
+      <div class="tip-header flex items-center gap-2 mb-4">
+        <IconBulb class="h-5 w-5 text-yellow-500" />
+        <span class="tip-title font-semibold">Streak Tips</span>
       </div>
       <div class="tip-content">
-        <ul class="tips-list">
-          <li v-for="tip in streakTips" :key="tip" class="tip-item">{{ tip }}</li>
+        <ul class="tips-list space-y-2">
+          <li v-for="tip in streakTips" :key="tip" class="tip-item flex items-start gap-2">
+            <IconPoint class="h-2 w-2 mt-2 text-primary flex-shrink-0" />
+            <span class="text-sm text-muted-foreground">{{ tip }}</span>
+          </li>
         </ul>
       </div>
-    </div>
+    </CardContent>
 
     <!-- Streak Warning -->
-    <div v-if="showWarning" class="streak-warning">
-      <div class="warning-content">
-        <span class="warning-icon">⚠️</span>
-        <div class="warning-text">
-          <span class="warning-title">{{ warningTitle }}</span>
-          <span class="warning-message">{{ warningMessage }}</span>
+    <CardContent v-if="showWarning" class="streak-warning border-t bg-yellow-50 border-yellow-200">
+      <div class="warning-content flex items-start gap-3">
+        <IconAlertTriangle class="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+        <div class="warning-text flex-1">
+          <span class="warning-title font-semibold text-yellow-800 block">{{ warningTitle }}</span>
+          <span class="warning-message text-sm text-yellow-700 block">{{ warningMessage }}</span>
         </div>
       </div>
-    </div>
-  </div>
+    </CardContent>
+  </Card>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted } from 'vue';
 import { router } from '@inertiajs/vue3';
+// Import shadcn-vue components
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+// Import Tabler icons
+import { IconStar, IconTarget, IconTrophy, IconFlame, IconRocket, IconShare, IconBulb, IconPoint, IconAlertTriangle, IconCheck, IconMoon, IconCrown, IconBolt, IconSeedling } from '@tabler/icons-vue';
 
 // Props
 interface Props {
@@ -179,14 +187,24 @@ const streakClass = computed(() => {
   return 'building';
 });
 
-const streakIcon = computed(() => {
+const streakIconComponent = computed(() => {
   const streak = props.currentStreak;
-  if (streak === 0) return '💤';
-  if (streak >= 30) return '👑';
-  if (streak >= 14) return '🚀';
-  if (streak >= 7) return '🔥';
-  if (streak >= 3) return '⚡';
-  return '🌱';
+  if (streak === 0) return IconMoon;
+  if (streak >= 30) return IconCrown;
+  if (streak >= 14) return IconRocket;
+  if (streak >= 7) return IconFlame;
+  if (streak >= 3) return IconBolt;
+  return IconSeedling;
+});
+
+const streakIconClass = computed(() => {
+  const streak = props.currentStreak;
+  if (streak === 0) return 'text-gray-500';
+  if (streak >= 30) return 'text-yellow-500';
+  if (streak >= 14) return 'text-purple-500';
+  if (streak >= 7) return 'text-red-500';
+  if (streak >= 3) return 'text-orange-500';
+  return 'text-green-500';
 });
 
 const streakTitle = computed(() => {
@@ -243,7 +261,8 @@ const milestones = computed(() => [
   {
     days: 3,
     title: 'First Steps',
-    icon: '🌱',
+    iconComponent: IconSeedling,
+    iconClass: 'text-green-500',
     bonus: 1.5,
     achieved: props.currentStreak >= 3,
     isNext: props.currentStreak < 3
@@ -251,7 +270,8 @@ const milestones = computed(() => [
   {
     days: 7,
     title: 'Weekly Warrior',
-    icon: '⚡',
+    iconComponent: IconBolt,
+    iconClass: 'text-orange-500',
     bonus: 2.0,
     achieved: props.currentStreak >= 7,
     isNext: props.currentStreak >= 3 && props.currentStreak < 7
@@ -259,7 +279,8 @@ const milestones = computed(() => [
   {
     days: 14,
     title: 'Fortnight Fighter',
-    icon: '🔥',
+    iconComponent: IconFlame,
+    iconClass: 'text-red-500',
     bonus: 2.5,
     achieved: props.currentStreak >= 14,
     isNext: props.currentStreak >= 7 && props.currentStreak < 14
@@ -267,7 +288,8 @@ const milestones = computed(() => [
   {
     days: 30,
     title: 'Monthly Master',
-    icon: '👑',
+    iconComponent: IconCrown,
+    iconClass: 'text-yellow-500',
     bonus: 3.0,
     achieved: props.currentStreak >= 30,
     isNext: props.currentStreak >= 14 && props.currentStreak < 30
@@ -332,9 +354,9 @@ const goToQuestions = () => {
 const shareStreak = () => {
   emit('shareStreak', props.currentStreak);
   
-  const message = `🔥 I'm on a ${props.currentStreak}-day prediction streak! 
-🎯 ${props.totalCorrect} correct predictions
-⚡ ${streakBonus.value}x streak bonus
+  const message = `I'm on a ${props.currentStreak}-day prediction streak! 
+${props.totalCorrect} correct predictions
+${streakBonus.value}x streak bonus
 
 Join me in the daily prediction challenge!`;
 

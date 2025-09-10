@@ -1,32 +1,37 @@
 <template>
   <div class="questions-page">
     <!-- Header -->
-    <div class="page-header">
-      <div class="header-content">
-        <div class="header-info">
-          <h1 class="page-title">🎯 Daily Questions</h1>
-          <p class="page-subtitle">Make your predictions and win coins!</p>
+    <Card class="mb-6">
+      <CardContent class="pt-6">
+        <div class="header-content">
+          <div class="header-info">
+            <h1 class="page-title flex items-center gap-2">
+              <IconTarget class="h-6 w-6" />
+              Daily Questions
+            </h1>
+            <p class="page-subtitle">Make your predictions and win coins!</p>
+          </div>
+          <div class="user-coins">
+            <Badge variant="secondary" class="flex items-center gap-2 px-3 py-2 text-lg">
+              <IconCoins class="h-5 w-5" />
+              {{ formatNumber(user.daily_coins) }}
+            </Badge>
+          </div>
         </div>
-        <div class="user-coins">
-          <span class="coin-icon">🪙</span>
-          <span class="coins-amount">{{ formatNumber(user.daily_coins) }}</span>
+        
+        <!-- Progress Section -->
+        <div class="progress-section">
+          <div class="progress-header">
+            <span class="progress-text">Progress: {{ answeredCount }} / {{ (questions && Array.isArray(questions)) ? questions.length : 0 }}</span>
+            <span class="time-remaining flex items-center gap-1">
+              <IconClock class="h-4 w-4" />
+              {{ timeUntilReset || 'Loading...' }}
+            </span>
+          </div>
+          <Progress :model-value="progressPercentage" class="mt-2" />
         </div>
-      </div>
-      
-      <!-- Progress Bar -->
-      <div class="progress-section">
-        <div class="progress-header">
-          <span class="progress-text">Progress: {{ answeredCount }} / {{ (questions && Array.isArray(questions)) ? questions.length : 0 }}</span>
-          <span class="time-remaining">⏰ {{ timeUntilReset || 'Loading...' }}</span>
-        </div>
-        <div class="progress-bar">
-          <div 
-            class="progress-fill" 
-            :style="{ width: progressPercentage + '%' }"
-          ></div>
-        </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
 
     <!-- Streak Display -->
     <StreakDisplay 
@@ -53,91 +58,104 @@
       </div>
 
       <!-- Empty State -->
-      <div v-else class="empty-state">
-        <div class="empty-icon">📅</div>
-        <h2 class="empty-title">No Questions Available</h2>
-        <p class="empty-description">
-          New daily questions will be available soon. Check back later!
-        </p>
-        <Link 
-          :href="dashboard.url()" 
-          class="btn btn-primary"
-        >
-          🏠 Back to Dashboard
-        </Link>
-      </div>
+      <Card v-else class="text-center py-12">
+        <CardContent>
+          <IconCalendar class="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+          <CardTitle class="mb-2">No Questions Available</CardTitle>
+          <CardDescription class="mb-6">
+            New daily questions will be available soon. Check back later!
+          </CardDescription>
+          <Button as-child>
+            <Link :href="dashboard.url()">
+              <IconHome class="h-4 w-4 mr-2" />
+              Back to Dashboard
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
 
       <!-- Completed State -->
-      <div v-if="allQuestionsAnswered && questions && questions.length > 0" class="completed-overlay">
-        <div class="completed-content">
-          <div class="completed-icon">🎉</div>
-          <h2 class="completed-title">All Questions Completed!</h2>
-          <p class="completed-description">
-            Great job! You've answered all {{ (questions && Array.isArray(questions)) ? questions.length : 0 }} questions today.
-            <br>Come back tomorrow for new challenges!
-          </p>
+      <Dialog :open="allQuestionsAnswered && questions && questions.length > 0">
+        <DialogContent class="sm:max-w-md">
+          <DialogHeader>
+            <div class="flex justify-center mb-4">
+              <IconTrophy class="h-16 w-16 text-yellow-500" />
+            </div>
+            <DialogTitle class="text-center">All Questions Completed!</DialogTitle>
+            <DialogDescription class="text-center">
+              Great job! You've answered all {{ (questions && Array.isArray(questions)) ? questions.length : 0 }} questions today.
+              <br>Come back tomorrow for new challenges!
+            </DialogDescription>
+          </DialogHeader>
           
           <!-- Summary Stats -->
-          <div class="completion-stats">
-            <div class="stat-item">
-              <div class="stat-value">{{ correctPredictions }}</div>
-              <div class="stat-label">Correct</div>
+          <div class="grid grid-cols-3 gap-4 py-4">
+            <div class="text-center">
+              <div class="text-2xl font-bold">{{ correctPredictions }}</div>
+              <div class="text-sm text-muted-foreground">Correct</div>
             </div>
-            <div class="stat-item">
-              <div class="stat-value">{{ totalWinnings }}</div>
-              <div class="stat-label">Coins Won</div>
+            <div class="text-center">
+              <div class="text-2xl font-bold">{{ totalWinnings }}</div>
+              <div class="text-sm text-muted-foreground">Coins Won</div>
             </div>
-            <div class="stat-item">
-              <div class="stat-value">{{ user?.current_streak || 0 }}</div>
-              <div class="stat-label">Current Streak</div>
+            <div class="text-center">
+              <div class="text-2xl font-bold">{{ user?.current_streak || 0 }}</div>
+              <div class="text-sm text-muted-foreground">Current Streak</div>
             </div>
           </div>
 
-          <div class="completion-actions">
-            <Link 
-              :href="leaderboard.index.url()" 
-              class="btn btn-secondary"
-            >
-              🏆 View Leaderboard
-            </Link>
-            <Link 
-              :href="dashboard.url()" 
-              class="btn btn-primary"
-            >
-              🏠 Dashboard
-            </Link>
-          </div>
-        </div>
-      </div>
+          <DialogFooter class="flex flex-col gap-2 sm:flex-row">
+            <Button variant="outline" as-child>
+              <Link :href="leaderboard.index.url()">
+                <IconTrophy class="h-4 w-4 mr-2" />
+                View Leaderboard
+              </Link>
+            </Button>
+            <Button as-child>
+              <Link :href="dashboard.url()">
+                <IconHome class="h-4 w-4 mr-2" />
+                Dashboard
+              </Link>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
 
     <!-- Quick Tips -->
-    <div class="tips-section" v-if="!allQuestionsAnswered">
-      <h3 class="tips-title">💡 Quick Tips</h3>
-      <div class="tips-grid">
-        <div class="tip-item">
-          <div class="tip-icon">🔥</div>
-          <div class="tip-content">
-            <div class="tip-title">Build Streaks</div>
-            <div class="tip-description">Correct predictions in a row increase your multiplier!</div>
+    <Card v-if="!allQuestionsAnswered" class="mt-6">
+      <CardHeader>
+        <CardTitle class="flex items-center gap-2">
+          <IconBulb class="h-5 w-5" />
+          Quick Tips
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div class="grid gap-4 md:grid-cols-3">
+          <div class="flex items-start gap-3 p-4 border rounded-lg">
+            <IconFlame class="h-5 w-5 text-orange-500 mt-0.5" />
+            <div>
+              <div class="font-medium">Build Streaks</div>
+              <div class="text-sm text-muted-foreground">Correct predictions in a row increase your multiplier!</div>
+            </div>
+          </div>
+          <div class="flex items-start gap-3 p-4 border rounded-lg">
+            <IconCoins class="h-5 w-5 text-yellow-500 mt-0.5" />
+            <div>
+              <div class="font-medium">Smart Betting</div>
+              <div class="text-sm text-muted-foreground">Bet more when you're confident, less when uncertain.</div>
+            </div>
+          </div>
+          <div class="flex items-start gap-3 p-4 border rounded-lg">
+            <IconRefresh class="h-5 w-5 text-blue-500 mt-0.5" />
+            <div>
+              <div class="font-medium">Daily Reset</div>
+              <div class="text-sm text-muted-foreground">New questions and fresh coins every day!</div>
+            </div>
           </div>
         </div>
-        <div class="tip-item">
-          <div class="tip-icon">💰</div>
-          <div class="tip-content">
-            <div class="tip-title">Smart Betting</div>
-            <div class="tip-description">Bet more when you're confident, less when uncertain.</div>
-          </div>
-        </div>
-        <div class="tip-item">
-          <div class="tip-icon">⏰</div>
-          <div class="tip-content">
-            <div class="tip-title">Daily Reset</div>
-            <div class="tip-description">New questions and fresh coins every day!</div>
-          </div>
-        </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   </div>
 </template>
 
@@ -150,6 +168,14 @@ import { initializeTelegramMock } from '@/lib/telegram-mock';
 // Import Wayfinder routes
 import { dashboard } from '@/routes';
 import leaderboard from '@/routes/leaderboard';
+// Import shadcn-vue components
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+// Import Tabler icons
+import { IconTarget, IconCoins, IconClock, IconCalendar, IconHome, IconTrophy, IconBulb, IconFlame, IconRefresh } from '@tabler/icons-vue';
 
 // Props
 interface User {
@@ -292,18 +318,8 @@ onMounted(() => {
 <style scoped>
 .questions-page {
   min-height: 100vh;
-  background: linear-gradient(to bottom, var(--tg-theme-bg-color, #f8fafc), #ffffff);
   padding: 1rem;
   padding-bottom: 2rem;
-}
-
-/* Header */
-.page-header {
-  background: white;
-  border-radius: 1rem;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .header-content {
@@ -320,37 +336,15 @@ onMounted(() => {
 .page-title {
   font-size: 1.75rem;
   font-weight: bold;
-  color: var(--tg-theme-text-color, #1f2937);
   margin: 0 0 0.5rem 0;
 }
 
 .page-subtitle {
-  color: #6b7280;
+  color: hsl(var(--muted-foreground));
   margin: 0;
   font-size: 1rem;
 }
 
-.user-coins {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: #fef3c7;
-  color: #d97706;
-  padding: 0.75rem 1rem;
-  border-radius: 0.75rem;
-  font-weight: 600;
-  border: 1px solid #fcd34d;
-}
-
-.coin-icon {
-  font-size: 1.25rem;
-}
-
-.coins-amount {
-  font-size: 1.25rem;
-}
-
-/* Progress Section */
 .progress-section {
   margin-top: 1.5rem;
 }
@@ -361,30 +355,13 @@ onMounted(() => {
   align-items: center;
   margin-bottom: 0.5rem;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: hsl(var(--muted-foreground));
 }
 
-.progress-bar {
-  width: 100%;
-  height: 0.5rem;
-  background: #e5e7eb;
-  border-radius: 0.25rem;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--tg-theme-button-color, #2481cc), #10b981);
-  border-radius: 0.25rem;
-  transition: width 0.5s ease;
-}
-
-/* Streak Display */
 .streak-display {
   margin-bottom: 1.5rem;
 }
 
-/* Questions Container */
 .questions-container {
   position: relative;
   margin-bottom: 2rem;
@@ -396,217 +373,15 @@ onMounted(() => {
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
 }
 
-/* Empty State */
-.empty-state {
-  text-align: center;
-  padding: 4rem 2rem;
-  background: white;
-  border-radius: 1rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-
-.empty-icon {
-  font-size: 5rem;
-  margin-bottom: 1.5rem;
-  opacity: 0.5;
-}
-
-.empty-title {
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: var(--tg-theme-text-color, #1f2937);
-  margin: 0 0 1rem 0;
-}
-
-.empty-description {
-  color: #6b7280;
-  margin: 0 0 2rem 0;
-  line-height: 1.6;
-}
-
-/* Completed Overlay */
-.completed-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 1rem;
-}
-
-.completed-content {
-  background: white;
-  border-radius: 1.5rem;
-  padding: 2rem;
-  text-align: center;
-  max-width: 400px;
-  width: 100%;
-  max-height: 80vh;
-  overflow-y: auto;
-}
-
-.completed-icon {
-  font-size: 4rem;
-  margin-bottom: 1rem;
-}
-
-.completed-title {
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: var(--tg-theme-text-color, #1f2937);
-  margin: 0 0 1rem 0;
-}
-
-.completed-description {
-  color: #6b7280;
-  margin: 0 0 1.5rem 0;
-  line-height: 1.6;
-}
-
-.completion-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-  margin: 1.5rem 0;
-  padding: 1rem;
-  background: #f8fafc;
-  border-radius: 0.75rem;
-}
-
-.stat-item {
-  text-align: center;
-}
-
-.stat-value {
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: var(--tg-theme-text-color, #1f2937);
-}
-
-.stat-label {
-  font-size: 0.75rem;
-  color: #6b7280;
-  margin-top: 0.25rem;
-}
-
-.completion-actions {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-/* Tips Section */
-.tips-section {
-  background: white;
-  border-radius: 1rem;
-  padding: 1.5rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-
-.tips-title {
-  font-size: 1.25rem;
-  font-weight: bold;
-  color: var(--tg-theme-text-color, #1f2937);
-  margin: 0 0 1rem 0;
-}
-
-.tips-grid {
-  display: grid;
-  gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-}
-
-.tip-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  padding: 1rem;
-  background: #f8fafc;
-  border-radius: 0.75rem;
-  border: 1px solid #e5e7eb;
-}
-
-.tip-icon {
-  font-size: 1.5rem;
-  flex-shrink: 0;
-}
-
-.tip-content {
-  flex: 1;
-}
-
-.tip-title {
-  font-weight: 600;
-  color: var(--tg-theme-text-color, #1f2937);
-  margin-bottom: 0.25rem;
-}
-
-.tip-description {
-  font-size: 0.875rem;
-  color: #6b7280;
-  line-height: 1.4;
-}
-
-/* Button Styles */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  border-radius: 0.75rem;
-  font-weight: 600;
-  text-decoration: none;
-  transition: all 0.2s;
-  border: none;
-  cursor: pointer;
-  font-size: 0.875rem;
-}
-
-.btn-primary {
-  background: var(--tg-theme-button-color, #2481cc);
-  color: white;
-}
-
-.btn-primary:hover {
-  background: #1d4ed8;
-  transform: translateY(-1px);
-}
-
-.btn-secondary {
-  background: white;
-  color: var(--tg-theme-text-color, #1f2937);
-  border: 2px solid #e5e7eb;
-}
-
-.btn-secondary:hover {
-  background: #f8fafc;
-  border-color: #d1d5db;
-  transform: translateY(-1px);
-}
-
 /* Responsive Design */
 @media (max-width: 768px) {
   .questions-page {
     padding: 0.75rem;
   }
   
-  .page-header {
-    padding: 1rem;
-  }
-  
   .header-content {
     flex-direction: column;
     gap: 1rem;
-  }
-  
-  .user-coins {
-    align-self: flex-start;
   }
   
   .page-title {
@@ -618,48 +393,16 @@ onMounted(() => {
     gap: 1rem;
   }
   
-  .tips-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .completion-stats {
-    grid-template-columns: 1fr;
-    gap: 0.75rem;
-  }
-  
-  .completion-actions {
+  .progress-header {
     flex-direction: column;
-  }
-  
-  .completed-content {
-    padding: 1.5rem;
-    margin: 0.5rem;
+    gap: 0.5rem;
+    align-items: flex-start;
   }
 }
 
 @media (max-width: 480px) {
   .questions-page {
     padding: 0.5rem;
-  }
-  
-  .empty-state {
-    padding: 2rem 1rem;
-  }
-  
-  .empty-icon {
-    font-size: 4rem;
-  }
-  
-  .tip-item {
-    flex-direction: column;
-    text-align: center;
-    gap: 0.5rem;
-  }
-  
-  .progress-header {
-    flex-direction: column;
-    gap: 0.5rem;
-    align-items: flex-start;
   }
 }
 </style>

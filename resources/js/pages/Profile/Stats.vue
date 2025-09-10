@@ -1,161 +1,199 @@
 <template>
   <div class="profile-page">
     <!-- Header -->
-    <div class="profile-header">
-      <div class="profile-avatar">
-        <div class="avatar-circle">
-          {{ user.first_name?.charAt(0) || 'U' }}
+    <Card class="profile-header mb-6">
+      <CardContent class="pt-6">
+        <div class="flex items-center gap-4">
+          <Avatar class="profile-avatar h-16 w-16">
+            <AvatarFallback class="text-2xl font-bold">
+              {{ user.first_name?.charAt(0) || 'U' }}
+            </AvatarFallback>
+          </Avatar>
+          <div class="profile-info flex-1">
+            <CardTitle class="profile-name">{{ user.first_name }} {{ user.last_name }}</CardTitle>
+            <CardDescription class="profile-username">@{{ user.username || 'user' }}</CardDescription>
+            <div class="profile-level flex items-center gap-3 mt-2">
+              <Badge class="level-badge">Level {{ userLevel }}</Badge>
+              <span class="experience text-sm text-muted-foreground">{{ user.total_points || 0 }} XP</span>
+            </div>
+          </div>
         </div>
-      </div>
-      <div class="profile-info">
-        <h1 class="profile-name">{{ user.first_name }} {{ user.last_name }}</h1>
-        <p class="profile-username">@{{ user.username || 'user' }}</p>
-        <div class="profile-level">
-          <span class="level-badge">Level {{ userLevel }}</span>
-          <span class="experience">{{ user.total_points || 0 }} XP</span>
-        </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
 
     <!-- Quick Stats Grid -->
-    <div class="quick-stats">
-      <div class="stat-card">
-        <div class="stat-icon">🏆</div>
-        <div class="stat-value">{{ user.total_winnings || 0 }}</div>
-        <div class="stat-label">Total Coins Won</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon">🔥</div>
-        <div class="stat-value">{{ user.current_streak || 0 }}</div>
-        <div class="stat-label">Current Streak</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon">📊</div>
-        <div class="stat-value">{{ accuracyPercentage }}%</div>
-        <div class="stat-label">Accuracy</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon">📅</div>
-        <div class="stat-value">{{ user.predictions_made || 0 }}</div>
-        <div class="stat-label">Predictions Made</div>
-      </div>
+    <div class="quick-stats grid grid-cols-2 gap-4 mb-6">
+      <Card class="stat-card">
+        <CardContent class="text-center pt-6">
+          <IconTrophy class="stat-icon h-8 w-8 mx-auto mb-2 text-yellow-500" />
+          <div class="stat-value text-2xl font-bold mb-1">{{ user.total_winnings || 0 }}</div>
+          <div class="stat-label text-sm text-muted-foreground">Total Coins Won</div>
+        </CardContent>
+      </Card>
+      <Card class="stat-card">
+        <CardContent class="text-center pt-6">
+          <IconFlame class="stat-icon h-8 w-8 mx-auto mb-2 text-red-500" />
+          <div class="stat-value text-2xl font-bold mb-1">{{ user.current_streak || 0 }}</div>
+          <div class="stat-label text-sm text-muted-foreground">Current Streak</div>
+        </CardContent>
+      </Card>
+      <Card class="stat-card">
+        <CardContent class="text-center pt-6">
+          <IconTrendingUp class="stat-icon h-8 w-8 mx-auto mb-2 text-green-500" />
+          <div class="stat-value text-2xl font-bold mb-1">{{ accuracyPercentage }}%</div>
+          <div class="stat-label text-sm text-muted-foreground">Accuracy</div>
+        </CardContent>
+      </Card>
+      <Card class="stat-card">
+        <CardContent class="text-center pt-6">
+          <IconCalendar class="stat-icon h-8 w-8 mx-auto mb-2 text-blue-500" />
+          <div class="stat-value text-2xl font-bold mb-1">{{ user.predictions_made || 0 }}</div>
+          <div class="stat-label text-sm text-muted-foreground">Predictions Made</div>
+        </CardContent>
+      </Card>
     </div>
 
     <!-- Detailed Statistics -->
     <div class="stats-section">
-      <h2 class="section-title">Performance Statistics</h2>
+      <h2 class="section-title text-xl font-bold mb-4">Performance Statistics</h2>
       
       <!-- Streak Information -->
-      <div class="stats-card">
-        <h3 class="card-title">Streak Records</h3>
-        <div class="streak-stats">
-          <div class="streak-item">
-            <span class="streak-label">Current Streak</span>
-            <div class="streak-display">
-              <span class="streak-number">{{ user.current_streak || 0 }}</span>
-              <span class="streak-emoji">🔥</span>
+      <Card class="stats-card mb-4">
+        <CardHeader>
+          <CardTitle class="card-title">Streak Records</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div class="streak-stats space-y-4">
+            <div class="streak-item flex justify-between items-center p-3 bg-muted rounded-lg">
+              <span class="streak-label font-medium">Current Streak</span>
+              <div class="streak-display flex items-center gap-2">
+                <span class="streak-number text-xl font-bold">{{ user.current_streak || 0 }}</span>
+                <IconFlame class="h-5 w-5 text-red-500" />
+              </div>
+            </div>
+            <div class="streak-item flex justify-between items-center p-3 bg-muted rounded-lg">
+              <span class="streak-label font-medium">Best Streak</span>
+              <div class="streak-display flex items-center gap-2">
+                <span class="streak-number text-xl font-bold">{{ user.best_streak || 0 }}</span>
+                <IconStar class="h-5 w-5 text-yellow-500" />
+              </div>
+            </div>
+            <div class="streak-item flex justify-between items-center p-3 bg-muted rounded-lg">
+              <span class="streak-label font-medium">Streak Potential</span>
+              <div class="streak-display flex items-center gap-2">
+                <span class="streak-number text-xl font-bold">{{ streakPotential }}</span>
+                <IconRocket class="h-5 w-5 text-purple-500" />
+              </div>
             </div>
           </div>
-          <div class="streak-item">
-            <span class="streak-label">Best Streak</span>
-            <div class="streak-display">
-              <span class="streak-number">{{ user.best_streak || 0 }}</span>
-              <span class="streak-emoji">⭐</span>
-            </div>
-          </div>
-          <div class="streak-item">
-            <span class="streak-label">Streak Potential</span>
-            <div class="streak-display">
-              <span class="streak-number">{{ streakPotential }}</span>
-              <span class="streak-emoji">🚀</span>
-            </div>
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       <!-- Prediction Breakdown -->
-      <div class="stats-card">
-        <h3 class="card-title">Prediction Breakdown</h3>
-        <div class="prediction-stats">
-          <div class="prediction-item">
-            <span class="prediction-label">Total Predictions</span>
-            <span class="prediction-value">{{ user.predictions_made || 0 }}</span>
-          </div>
-          <div class="prediction-item">
-            <span class="prediction-label">Correct Predictions</span>
-            <span class="prediction-value correct">{{ correctPredictions }}</span>
-          </div>
-          <div class="prediction-item">
-            <span class="prediction-label">Accuracy Rate</span>
-            <span class="prediction-value">{{ accuracyPercentage }}%</span>
-          </div>
-          <div class="prediction-item">
-            <span class="prediction-label">Favorite Category</span>
-            <span class="prediction-value">{{ favoriteCategory }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Earnings Summary -->
-      <div class="stats-card">
-        <h3 class="card-title">Earnings Summary</h3>
-        <div class="earnings-stats">
-          <div class="earnings-item">
-            <span class="earnings-label">Total Winnings</span>
-            <span class="earnings-value">{{ user.total_winnings || 0 }} coins</span>
-          </div>
-          <div class="earnings-item">
-            <span class="earnings-label">Total Wagered</span>
-            <span class="earnings-value">{{ user.total_wagered || 0 }} coins</span>
-          </div>
-          <div class="earnings-item">
-            <span class="earnings-label">Net Profit</span>
-            <span class="earnings-value" :class="netProfitClass">{{ netProfit }} coins</span>
-          </div>
-          <div class="earnings-item">
-            <span class="earnings-label">ROI</span>
-            <span class="earnings-value" :class="roiClass">{{ roi }}%</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Achievements -->
-      <div class="stats-card">
-        <h3 class="card-title">Achievements</h3>
-        <div class="achievements-grid">
-          <div 
-            v-for="achievement in achievements" 
-            :key="achievement.id"
-            class="achievement-badge"
-            :class="{ earned: achievement.earned }"
-          >
-            <div class="achievement-icon">{{ achievement.emoji }}</div>
-            <div class="achievement-info">
-              <div class="achievement-name">{{ achievement.name }}</div>
-              <div class="achievement-description">{{ achievement.description }}</div>
+      <Card class="stats-card mb-4">
+        <CardHeader>
+          <CardTitle class="card-title">Prediction Breakdown</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div class="prediction-stats space-y-3">
+            <div class="prediction-item flex justify-between items-center py-2 border-b">
+              <span class="prediction-label text-muted-foreground">Total Predictions</span>
+              <span class="prediction-value font-semibold">{{ user.predictions_made || 0 }}</span>
+            </div>
+            <div class="prediction-item flex justify-between items-center py-2 border-b">
+              <span class="prediction-label text-muted-foreground">Correct Predictions</span>
+              <span class="prediction-value correct font-semibold text-green-600">{{ correctPredictions }}</span>
+            </div>
+            <div class="prediction-item flex justify-between items-center py-2 border-b">
+              <span class="prediction-label text-muted-foreground">Accuracy Rate</span>
+              <span class="prediction-value font-semibold">{{ accuracyPercentage }}%</span>
+            </div>
+            <div class="prediction-item flex justify-between items-center py-2">
+              <span class="prediction-label text-muted-foreground">Favorite Category</span>
+              <span class="prediction-value font-semibold">{{ favoriteCategory }}</span>
             </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
+
+      <!-- Earnings Summary -->
+      <Card class="stats-card mb-4">
+        <CardHeader>
+          <CardTitle class="card-title">Earnings Summary</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div class="earnings-stats space-y-3">
+            <div class="earnings-item flex justify-between items-center py-2 border-b">
+              <span class="earnings-label text-muted-foreground">Total Winnings</span>
+              <span class="earnings-value font-semibold">{{ user.total_winnings || 0 }} coins</span>
+            </div>
+            <div class="earnings-item flex justify-between items-center py-2 border-b">
+              <span class="earnings-label text-muted-foreground">Total Wagered</span>
+              <span class="earnings-value font-semibold">{{ user.total_wagered || 0 }} coins</span>
+            </div>
+            <div class="earnings-item flex justify-between items-center py-2 border-b">
+              <span class="earnings-label text-muted-foreground">Net Profit</span>
+              <span class="earnings-value font-semibold" :class="{
+                'text-green-600': netProfitClass === 'profit',
+                'text-red-600': netProfitClass === 'loss',
+                'text-muted-foreground': netProfitClass === 'neutral'
+              }">{{ netProfit }} coins</span>
+            </div>
+            <div class="earnings-item flex justify-between items-center py-2">
+              <span class="earnings-label text-muted-foreground">ROI</span>
+              <span class="earnings-value font-semibold" :class="{
+                'text-green-600': roiClass === 'profit',
+                'text-red-600': roiClass === 'loss',
+                'text-muted-foreground': roiClass === 'neutral'
+              }">{{ roi }}%</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <!-- Achievements -->
+      <Card class="stats-card mb-4">
+        <CardHeader>
+          <CardTitle class="card-title">Achievements</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div class="achievements-grid space-y-3">
+            <div 
+              v-for="achievement in achievements" 
+              :key="achievement.id"
+              class="achievement-badge flex items-center gap-4 p-4 rounded-lg transition-all"
+              :class="{ 
+                'bg-yellow-50 border-2 border-yellow-200 opacity-100': achievement.earned,
+                'bg-muted opacity-50': !achievement.earned
+              }"
+            >
+              <div class="achievement-icon text-2xl flex-shrink-0">{{ achievement.emoji }}</div>
+              <div class="achievement-info flex-1">
+                <div class="achievement-name font-semibold mb-1">{{ achievement.name }}</div>
+                <div class="achievement-description text-sm text-muted-foreground">{{ achievement.description }}</div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
 
     <!-- Actions -->
-    <div class="profile-actions">
-      <button 
+    <div class="profile-actions grid grid-cols-2 gap-4 mt-8">
+      <Button 
         @click="shareStats" 
-        class="action-button primary"
         :disabled="!telegram"
+        class="action-button"
       >
-        <span class="button-icon">📤</span>
+        <IconShare class="h-5 w-5 mr-2" />
         Share Stats
-      </button>
-      <Link 
-        href="/leaderboard" 
-        class="action-button secondary"
-      >
-        <span class="button-icon">🏆</span>
-        View Rankings
-      </Link>
+      </Button>
+      <Button variant="outline" as-child class="action-button">
+        <Link href="/leaderboard">
+          <IconTrophy class="h-5 w-5 mr-2" />
+          View Rankings
+        </Link>
+      </Button>
     </div>
   </div>
 </template>
@@ -164,6 +202,13 @@
 import { computed, onMounted, ref } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import { initializeTelegramMock } from '@/lib/telegram-mock';
+// Import shadcn-vue components
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+// Import Tabler icons
+import { IconTrophy, IconFlame, IconTrendingUp, IconCalendar, IconStar, IconRocket, IconShare } from '@tabler/icons-vue';
 
 // Props
 interface Props {
@@ -262,11 +307,11 @@ const streakPotential = computed(() => {
 const shareStats = () => {
   if (!telegram.value) return;
   
-  const stats = `🎯 My Prediction Game Stats:
-🏆 ${props.user.total_winnings || 0} coins won
-🔥 ${props.user.current_streak || 0} day streak
-📊 ${accuracyPercentage.value}% accuracy
-📅 ${props.user.predictions_made || 0} predictions made
+  const stats = `My Prediction Game Stats:
+${props.user.total_winnings || 0} coins won
+${props.user.current_streak || 0} day streak
+${accuracyPercentage.value}% accuracy
+${props.user.predictions_made || 0} predictions made
 
 Join me in the daily prediction challenge!`;
 
