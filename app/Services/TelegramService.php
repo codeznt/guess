@@ -19,7 +19,7 @@ class TelegramService
     /**
      * Bot token for API authentication.
      */
-    private string $botToken;
+    private ?string $botToken;
 
     /**
      * WebApp URL for the game.
@@ -44,7 +44,7 @@ class TelegramService
     public function __construct()
     {
         $this->botToken = config('telegram.bot_token');
-        $this->apiUrl = "https://api.telegram.org/bot{$this->botToken}/";
+        $this->apiUrl = $this->botToken ? "https://api.telegram.org/bot{$this->botToken}/" : '';
         $this->webAppUrl = config('telegram.web_app_url', config('app.url'));
     }
 
