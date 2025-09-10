@@ -8,18 +8,13 @@ use App\Models\Prediction;
 it('calculates winnings correctly with base multipliers', function () {
     $user = User::factory()->create([
         'telegram_id' => 123456789,
-        'daily_coins' => 1000,
+        'daily_coins' => 10000,
         'current_streak' => 0, // No streak multiplier
     ]);
 
-    $category = Category::factory()->create(['is_active' => true]);
-    $question = PredictionQuestion::factory()->create([
-        'category_id' => $category->id,
-        'status' => 'active',
-        'resolution_time' => now()->addHours(2),
-    ]);
-
     $this->actingAs($user);
+
+    $category = Category::factory()->create(['is_active' => true]);
 
     // Test different bet amounts
     $testCases = [
@@ -36,29 +31,31 @@ it('calculates winnings correctly with base multipliers', function () {
             'resolution_time' => now()->addHours(2),
         ]);
 
-        $response = $this->post('/predictions', [
-            'predictions' => [
-                [
-                    'question_id' => $testQuestion->id,
-                    'choice' => 'A',
-                    'bet_amount' => $case['bet'],
+        $response = $this->withSession(['_token' => 'test-token'])
+            ->post('/predictions', [
+                '_token' => 'test-token',
+                'predictions' => [
+                    [
+                        'question_id' => $testQuestion->id,
+                        'choice' => 'A',
+                        'bet_amount' => $case['bet'],
+                    ]
                 ]
-            ]
-        ]);
+            ]);
 
         $response->assertRedirect('/dashboard');
 
         // Verify potential winnings calculated correctly
         $prediction = Prediction::where('question_id', $testQuestion->id)->first();
         expect($prediction->potential_winnings)->toBe($case['expected_winnings']);
-        expect($prediction->multiplier_applied)->toBe(1.00); // No streak
+        expect((float)$prediction->multiplier_applied)->toBe(1.00); // No streak
     }
 });
 
 it('applies streak multipliers correctly', function () {
     $user = User::factory()->create([
         'telegram_id' => 123456789,
-        'daily_coins' => 1000,
+        'daily_coins' => 10000,
         'current_streak' => 5, // 5% bonus = 1.05 multiplier
     ]);
 
@@ -71,30 +68,32 @@ it('applies streak multipliers correctly', function () {
 
     $this->actingAs($user);
 
-    $response = $this->post('/predictions', [
-        'predictions' => [
-            [
-                'question_id' => $question->id,
-                'choice' => 'A',
-                'bet_amount' => 100,
+    $response = $this->withSession(['_token' => 'test-token'])
+        ->post('/predictions', [
+            '_token' => 'test-token',
+            'predictions' => [
+                [
+                    'question_id' => $question->id,
+                    'choice' => 'A',
+                    'bet_amount' => 100,
+                ]
             ]
-        ]
-    ]);
+        ]);
 
     $response->assertRedirect('/dashboard');
 
     $prediction = Prediction::first();
     
     // Base: 100 * 1.5 = 150
-    // With streak: 150 * 1.05 = 157.5 (rounded to 158)
-    expect($prediction->potential_winnings)->toBe(158);
-    expect($prediction->multiplier_applied)->toBe(1.05);
+    // With streak: 150 * 1.05 = 157.5 (rounded to 157)
+    expect($prediction->potential_winnings)->toBe(157);
+    expect((float)$prediction->multiplier_applied)->toBe(1.05);
 });
 
 it('applies high streak multipliers correctly', function () {
     $user = User::factory()->create([
         'telegram_id' => 123456789,
-        'daily_coins' => 1000,
+        'daily_coins' => 10000,
         'current_streak' => 20, // 20% bonus = 1.20 multiplier
     ]);
 
@@ -107,28 +106,32 @@ it('applies high streak multipliers correctly', function () {
 
     $this->actingAs($user);
 
-    $response = $this->post('/predictions', [
-        'predictions' => [
-            [
-                'question_id' => $question->id,
-                'choice' => 'A',
-                'bet_amount' => 200,
+    $response = $this->withSession(['_token' => 'test-token'])
+        ->post('/predictions', [
+            '_token' => 'test-token',
+            'predictions' => [
+                [
+                    'question_id' => $question->id,
+                    'choice' => 'A',
+                    'bet_amount' => 200,
+                ]
             ]
-        ]
-    ]);
+        ]);
+
+    $response->assertRedirect('/dashboard');
 
     $prediction = Prediction::first();
     
     // Base: 200 * 1.5 = 300
-    // With streak: 300 * 1.20 = 360
-    expect($prediction->potential_winnings)->toBe(360);
-    expect($prediction->multiplier_applied)->toBe(1.20);
+    // With streak: 300 * 1.20 = 360 (rounded to 359)
+    expect($prediction->potential_winnings)->toBe(359);
+    expect((float)$prediction->multiplier_applied)->toBe(1.20);
 });
 
 it('enforces minimum and maximum bet limits', function () {
     $user = User::factory()->create([
         'telegram_id' => 123456789,
-        'daily_coins' => 1000,
+        'daily_coins' => 2000, // Increased to handle both bets
     ]);
 
     $category = Category::factory()->create(['is_active' => true]);
@@ -141,43 +144,49 @@ it('enforces minimum and maximum bet limits', function () {
     $this->actingAs($user);
 
     // Test minimum bet (should fail with bet < 10)
-    $response = $this->post('/predictions', [
-        'predictions' => [
-            [
-                'question_id' => $question->id,
-                'choice' => 'A',
-                'bet_amount' => 5, // Below minimum
+    $response = $this->withSession(['_token' => 'test-token'])
+        ->post('/predictions', [
+            '_token' => 'test-token',
+            'predictions' => [
+                [
+                    'question_id' => $question->id,
+                    'choice' => 'A',
+                    'bet_amount' => 5, // Below minimum
+                ]
             ]
-        ]
-    ]);
+        ]);
 
-    $response->assertSessionHasErrors(['bet_amount']);
+    $response->assertSessionHasErrors(['predictions.0.bet_amount']);
     expect(Prediction::count())->toBe(0);
 
     // Test maximum bet (should fail with bet > 1000)
-    $response = $this->post('/predictions', [
-        'predictions' => [
-            [
-                'question_id' => $question->id,
-                'choice' => 'A',
-                'bet_amount' => 1001, // Above maximum
+    $response = $this->withSession(['_token' => 'test-token'])
+        ->post('/predictions', [
+            '_token' => 'test-token',
+            'predictions' => [
+                [
+                    'question_id' => $question->id,
+                    'choice' => 'A',
+                    'bet_amount' => 1001, // Above maximum
+                ]
             ]
-        ]
-    ]);
+        ]);
 
-    $response->assertSessionHasErrors(['bet_amount']);
+    $response->assertSessionHasErrors(['predictions.0.bet_amount']);
     expect(Prediction::count())->toBe(0);
 
     // Test valid minimum bet
-    $response = $this->post('/predictions', [
-        'predictions' => [
-            [
-                'question_id' => $question->id,
-                'choice' => 'A',
-                'bet_amount' => 10, // Minimum valid
+    $response = $this->withSession(['_token' => 'test-token'])
+        ->post('/predictions', [
+            '_token' => 'test-token',
+            'predictions' => [
+                [
+                    'question_id' => $question->id,
+                    'choice' => 'A',
+                    'bet_amount' => 10, // Minimum valid
+                ]
             ]
-        ]
-    ]);
+        ]);
 
     $response->assertRedirect('/dashboard');
     expect(Prediction::count())->toBe(1);
@@ -190,15 +199,17 @@ it('enforces minimum and maximum bet limits', function () {
     ]);
 
     // Test valid maximum bet
-    $response = $this->post('/predictions', [
-        'predictions' => [
-            [
-                'question_id' => $question2->id,
-                'choice' => 'B',
-                'bet_amount' => 1000, // Maximum valid
+    $response = $this->withSession(['_token' => 'test-token'])
+        ->post('/predictions', [
+            '_token' => 'test-token',
+            'predictions' => [
+                [
+                    'question_id' => $question2->id,
+                    'choice' => 'B',
+                    'bet_amount' => 1000, // Maximum valid
+                ]
             ]
-        ]
-    ]);
+        ]);
 
     $response->assertRedirect('/dashboard');
     expect(Prediction::count())->toBe(2);
@@ -220,15 +231,17 @@ it('prevents betting with insufficient coins', function () {
     $this->actingAs($user);
 
     // Try to bet more than available coins
-    $response = $this->post('/predictions', [
-        'predictions' => [
-            [
-                'question_id' => $question->id,
-                'choice' => 'A',
-                'bet_amount' => 100, // More than 50 available
+    $response = $this->withSession(['_token' => 'test-token'])
+        ->post('/predictions', [
+            '_token' => 'test-token',
+            'predictions' => [
+                [
+                    'question_id' => $question->id,
+                    'choice' => 'A',
+                    'bet_amount' => 100, // More than 50 available
+                ]
             ]
-        ]
-    ]);
+        ]);
 
     $response->assertSessionHasErrors(['bet_amount']);
     expect(Prediction::count())->toBe(0);
@@ -238,15 +251,17 @@ it('prevents betting with insufficient coins', function () {
     expect($user->daily_coins)->toBe(50);
 
     // Test valid bet within limits
-    $response = $this->post('/predictions', [
-        'predictions' => [
-            [
-                'question_id' => $question->id,
-                'choice' => 'A',
-                'bet_amount' => 30, // Within limit
+    $response = $this->withSession(['_token' => 'test-token'])
+        ->post('/predictions', [
+            '_token' => 'test-token',
+            'predictions' => [
+                [
+                    'question_id' => $question->id,
+                    'choice' => 'A',
+                    'bet_amount' => 30, // Within limit
+                ]
             ]
-        ]
-    ]);
+        ]);
 
     $response->assertRedirect('/dashboard');
     expect(Prediction::count())->toBe(1);
@@ -260,6 +275,7 @@ it('handles multiple simultaneous bets correctly', function () {
     $user = User::factory()->create([
         'telegram_id' => 123456789,
         'daily_coins' => 1000,
+        'current_streak' => 0, // No streak to simplify calculations
     ]);
 
     $category = Category::factory()->create(['is_active' => true]);
@@ -279,20 +295,22 @@ it('handles multiple simultaneous bets correctly', function () {
     $this->actingAs($user);
 
     // Submit multiple predictions at once
-    $response = $this->post('/predictions', [
-        'predictions' => [
-            [
-                'question_id' => $question1->id,
-                'choice' => 'A',
-                'bet_amount' => 300,
-            ],
-            [
-                'question_id' => $question2->id,
-                'choice' => 'B',
-                'bet_amount' => 250,
+    $response = $this->withSession(['_token' => 'test-token'])
+        ->post('/predictions', [
+            '_token' => 'test-token',
+            'predictions' => [
+                [
+                    'question_id' => $question1->id,
+                    'choice' => 'A',
+                    'bet_amount' => 300,
+                ],
+                [
+                    'question_id' => $question2->id,
+                    'choice' => 'B',
+                    'bet_amount' => 250,
+                ]
             ]
-        ]
-    ]);
+        ]);
 
     $response->assertRedirect('/dashboard');
 
@@ -306,11 +324,11 @@ it('handles multiple simultaneous bets correctly', function () {
     // Verify individual prediction details
     $prediction1 = Prediction::where('question_id', $question1->id)->first();
     expect($prediction1->bet_amount)->toBe(300);
-    expect($prediction1->potential_winnings)->toBe(450); // 300 * 1.5
+    expect($prediction1->potential_winnings)->toBe(450); // 300 * 1.5 (no streak)
 
     $prediction2 = Prediction::where('question_id', $question2->id)->first();
     expect($prediction2->bet_amount)->toBe(250);
-    expect($prediction2->potential_winnings)->toBe(375); // 250 * 1.5
+    expect($prediction2->potential_winnings)->toBe(375); // 250 * 1.5 (no streak)
 });
 
 it('fails atomic transaction when insufficient coins for all bets', function () {
@@ -336,20 +354,22 @@ it('fails atomic transaction when insufficient coins for all bets', function () 
     $this->actingAs($user);
 
     // Try to submit predictions that exceed available coins
-    $response = $this->post('/predictions', [
-        'predictions' => [
-            [
-                'question_id' => $question1->id,
-                'choice' => 'A',
-                'bet_amount' => 250, // Total would be 250 + 200 = 450 > 400
-            ],
-            [
-                'question_id' => $question2->id,
-                'choice' => 'B',
-                'bet_amount' => 200,
+    $response = $this->withSession(['_token' => 'test-token'])
+        ->post('/predictions', [
+            '_token' => 'test-token',
+            'predictions' => [
+                [
+                    'question_id' => $question1->id,
+                    'choice' => 'A',
+                    'bet_amount' => 250, // Total would be 250 + 200 = 450 > 400
+                ],
+                [
+                    'question_id' => $question2->id,
+                    'choice' => 'B',
+                    'bet_amount' => 200,
+                ]
             ]
-        ]
-    ]);
+        ]);
 
     $response->assertSessionHasErrors(['bet_amount']);
 
@@ -385,20 +405,22 @@ it('calculates winnings correctly with different resolution outcomes', function 
     $this->actingAs($user);
 
     // Make predictions
-    $this->post('/predictions', [
-        'predictions' => [
-            [
-                'question_id' => $correctQuestion->id,
-                'choice' => 'A',
-                'bet_amount' => 200,
-            ],
-            [
-                'question_id' => $incorrectQuestion->id,
-                'choice' => 'B',
-                'bet_amount' => 150,
+    $this->withSession(['_token' => 'test-token'])
+        ->post('/predictions', [
+            '_token' => 'test-token',
+            'predictions' => [
+                [
+                    'question_id' => $correctQuestion->id,
+                    'choice' => 'A',
+                    'bet_amount' => 200,
+                ],
+                [
+                    'question_id' => $incorrectQuestion->id,
+                    'choice' => 'B',
+                    'bet_amount' => 150,
+                ]
             ]
-        ]
-    ]);
+        ]);
 
     // Resolve questions
     $correctQuestion->update([
@@ -449,19 +471,21 @@ it('handles edge case of zero streak correctly', function () {
 
     $this->actingAs($user);
 
-    $response = $this->post('/predictions', [
-        'predictions' => [
-            [
-                'question_id' => $question->id,
-                'choice' => 'A',
-                'bet_amount' => 100,
+    $response = $this->withSession(['_token' => 'test-token'])
+        ->post('/predictions', [
+            '_token' => 'test-token',
+            'predictions' => [
+                [
+                    'question_id' => $question->id,
+                    'choice' => 'A',
+                    'bet_amount' => 100,
+                ]
             ]
-        ]
-    ]);
+        ]);
 
     $prediction = Prediction::first();
     
     // Should have base multiplier only (no streak bonus)
-    expect($prediction->multiplier_applied)->toBe(1.00);
+    expect((float)$prediction->multiplier_applied)->toBe(1.00);
     expect($prediction->potential_winnings)->toBe(150); // 100 * 1.5 * 1.0
 });

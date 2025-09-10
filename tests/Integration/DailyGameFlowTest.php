@@ -65,9 +65,9 @@ it('completes full daily game flow from dashboard to results', function () {
         );
 
     // Step 3: Submit predictions
-    $predictionsResponse = $this->withSession(['_token' => csrf_token()])
+    $predictionsResponse = $this->withSession(['_token' => 'test-token'])
         ->post('/predictions', [
-            '_token' => csrf_token(),
+            '_token' => 'test-token',
             'predictions' => [
                 [
                     'question_id' => $question1->id,
@@ -142,22 +142,14 @@ it('completes full daily game flow from dashboard to results', function () {
             ->where('userStats.dailyCoins', 950) // 650 + 300 winnings
         );
 
-    // Step 9: Check leaderboard position
-    DailyLeaderboard::factory()->create([
-        'user_id' => $user->id,
-        'leaderboard_date' => now()->toDateString(),
-        'total_winnings' => 300,
-        'predictions_made' => 2,
-        'correct_predictions' => 1,
-        'accuracy_percentage' => 50.0,
-        'rank' => 25,
-    ]);
+    // Step 9: Generate leaderboard from predictions and check position
+    DailyLeaderboard::generateDailyLeaderboard(now()->toDateString());
 
     $leaderboardResponse = $this->get('/leaderboard');
     $leaderboardResponse->assertStatus(200)
         ->assertInertia(fn ($page) => $page
             ->component('Leaderboard/Daily')
-            ->where('userRank', 25)
+            ->where('userRank', 1) // User should be ranked 1st with their winnings
         );
 });
 
@@ -180,15 +172,17 @@ it('handles streak breaking scenario', function () {
     $this->actingAs($user);
 
     // Make prediction
-    $this->post('/predictions', [
-        'predictions' => [
-            [
-                'question_id' => $question->id,
-                'choice' => 'A',
-                'bet_amount' => 100,
+    $this->withSession(['_token' => 'test-token'])
+        ->post('/predictions', [
+            '_token' => 'test-token',
+            'predictions' => [
+                [
+                    'question_id' => $question->id,
+                    'choice' => 'A',
+                    'bet_amount' => 100,
+                ]
             ]
-        ]
-    ]);
+        ]);
 
     // Simulate wrong answer - breaks streak
     $question->update([
@@ -241,26 +235,30 @@ it('handles multiple users competing on same day', function () {
 
     // Both users make predictions
     $this->actingAs($user1);
-    $this->post('/predictions', [
-        'predictions' => [
-            [
-                'question_id' => $question->id,
-                'choice' => 'A',
-                'bet_amount' => 300, // Higher bet
+    $this->withSession(['_token' => 'test-token'])
+        ->post('/predictions', [
+            '_token' => 'test-token',
+            'predictions' => [
+                [
+                    'question_id' => $question->id,
+                    'choice' => 'A',
+                    'bet_amount' => 300, // Higher bet
+                ]
             ]
-        ]
-    ]);
+        ]);
 
     $this->actingAs($user2);
-    $this->post('/predictions', [
-        'predictions' => [
-            [
-                'question_id' => $question->id,
-                'choice' => 'A',
-                'bet_amount' => 200, // Lower bet
+    $this->withSession(['_token' => 'test-token'])
+        ->post('/predictions', [
+            '_token' => 'test-token',
+            'predictions' => [
+                [
+                    'question_id' => $question->id,
+                    'choice' => 'A',
+                    'bet_amount' => 200, // Lower bet
+                ]
             ]
-        ]
-    ]);
+        ]);
 
     // Resolve question - both correct
     $question->update([
@@ -268,30 +266,19 @@ it('handles multiple users competing on same day', function () {
         'correct_answer' => 'A',
     ]);
 
-    // Update predictions and create leaderboard entries
+    // Update predictions with results
     Prediction::where('user_id', $user1->id)->update([
         'is_correct' => true,
-        'actual_winnings' => 450, // Higher winnings due to higher bet
+        'actual_winnings' => 450, // 300 * 1.5 = 450
     ]);
 
     Prediction::where('user_id', $user2->id)->update([
         'is_correct' => true,
-        'actual_winnings' => 300, // Lower winnings
+        'actual_winnings' => 300, // 200 * 1.5 = 300
     ]);
 
-    DailyLeaderboard::factory()->create([
-        'user_id' => $user1->id,
-        'leaderboard_date' => now()->toDateString(),
-        'total_winnings' => 450,
-        'rank' => 1, // Higher rank due to higher winnings
-    ]);
-
-    DailyLeaderboard::factory()->create([
-        'user_id' => $user2->id,
-        'leaderboard_date' => now()->toDateString(),
-        'total_winnings' => 300,
-        'rank' => 2,
-    ]);
+    // Generate leaderboard from predictions
+    DailyLeaderboard::generateDailyLeaderboard(now()->toDateString());
 
     // Check leaderboard shows correct rankings
     $this->actingAs($user1);
@@ -323,15 +310,17 @@ it('prevents predictions after resolution time', function () {
     $this->actingAs($user);
 
     // Try to make prediction on expired question
-    $response = $this->post('/predictions', [
-        'predictions' => [
-            [
-                'question_id' => $expiredQuestion->id,
-                'choice' => 'A',
-                'bet_amount' => 100,
+    $response = $this->withSession(['_token' => 'test-token'])
+        ->post('/predictions', [
+            '_token' => 'test-token',
+            'predictions' => [
+                [
+                    'question_id' => $expiredQuestion->id,
+                    'choice' => 'A',
+                    'bet_amount' => 100,
+                ]
             ]
-        ]
-    ]);
+        ]);
 
     // Should fail with error
     $response->assertSessionHasErrors();

@@ -20,12 +20,12 @@ class StreakService
     /**
      * Maximum streak multiplier allowed.
      */
-    public const MAX_MULTIPLIER = 3.0;
+    public const MAX_MULTIPLIER = 2.0;
 
     /**
      * Multiplier increment per correct prediction.
      */
-    public const MULTIPLIER_INCREMENT = 0.1;
+    public const MULTIPLIER_INCREMENT = 0.01;
 
     /**
      * Days to consider for streak calculation.

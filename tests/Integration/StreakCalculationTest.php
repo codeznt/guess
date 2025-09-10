@@ -165,27 +165,38 @@ it('calculates streak multiplier correctly', function () {
             'current_streak' => $case['streak'],
         ]);
 
-        $category = Category::factory()->create(['is_active' => true]);
+        $category = Category::factory()->create([
+            'is_active' => true,
+            'name' => 'Test Category ' . uniqid(),
+        ]);
         $question = PredictionQuestion::factory()->create([
             'category_id' => $category->id,
             'status' => 'active',
             'resolution_time' => now()->addHours(2),
         ]);
 
+        // Ensure user has enough coins for the bet
+        $user->update(['daily_coins' => 1000]);
+        
         $this->actingAs($user);
 
-        $response = $this->post('/predictions', [
-            'predictions' => [
-                [
-                    'question_id' => $question->id,
-                    'choice' => 'A',
-                    'bet_amount' => 100,
+        $response = $this->withSession(['_token' => 'test-token'])
+            ->post('/predictions', [
+                '_token' => 'test-token',
+                'predictions' => [
+                    [
+                        'question_id' => $question->id,
+                        'choice' => 'A',
+                        'bet_amount' => 100,
+                    ]
                 ]
-            ]
-        ]);
+            ]);
+
+        $response->assertRedirect('/dashboard');
 
         $prediction = Prediction::where('question_id', $question->id)->first();
-        expect($prediction->multiplier_applied)->toBe($case['expected_multiplier']);
+        expect($prediction)->not->toBeNull();
+        expect((float)$prediction->multiplier_applied)->toBe($case['expected_multiplier']);
     }
 });
 
@@ -373,22 +384,29 @@ it('handles edge case of very long streaks correctly', function () {
         'resolution_time' => now()->addHours(2),
     ]);
 
+    // Ensure user has enough coins for the bet
+    $user->update(['daily_coins' => 1000]);
+    
     $this->actingAs($user);
 
-    $response = $this->post('/predictions', [
-        'predictions' => [
-            [
-                'question_id' => $question->id,
-                'choice' => 'A',
-                'bet_amount' => 100,
+    $response = $this->withSession(['_token' => 'test-token'])
+        ->post('/predictions', [
+            '_token' => 'test-token',
+            'predictions' => [
+                [
+                    'question_id' => $question->id,
+                    'choice' => 'A',
+                    'bet_amount' => 100,
+                ]
             ]
-        ]
-    ]);
+        ]);
+
+    $response->assertRedirect('/dashboard');
 
     $prediction = Prediction::first();
     
     // Should cap at 2.0x multiplier even for very long streaks
-    expect($prediction->multiplier_applied)->toBe(2.00);
+    expect((float)$prediction->multiplier_applied)->toBe(2.00);
     expect($prediction->potential_winnings)->toBe(300); // 100 * 1.5 * 2.0
 });
 
@@ -429,5 +447,5 @@ it('calculates accuracy percentage correctly with streaks', function () {
 
     $user->refresh();
     $newAccuracy = ($user->correct_predictions / $user->total_predictions) * 100;
-    expect($newAccuracy)->toBeCloseTo(80.95, 1); // 17/21 * 100 ≈ 80.95%
+    expect($newAccuracy)->toBe(80.95238095238095); // 17/21 * 100 ≈ 80.95%
 });

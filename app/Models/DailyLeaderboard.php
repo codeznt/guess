@@ -111,7 +111,7 @@ class DailyLeaderboard extends Model
                 DB::raw('SUM(CASE WHEN predictions.is_correct = 1 THEN 1 ELSE 0 END) as correct_predictions'),
                 DB::raw('CASE 
                     WHEN COUNT(predictions.id) > 0 
-                    THEN ROUND((SUM(CASE WHEN predictions.is_correct = 1 THEN 1 ELSE 0 END) / COUNT(predictions.id)) * 100, 2)
+                    THEN ROUND((SUM(CASE WHEN predictions.is_correct = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(predictions.id)), 2)
                     ELSE 0 
                 END as accuracy_percentage')
             ])
