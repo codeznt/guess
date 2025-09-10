@@ -227,7 +227,7 @@ it('handles concurrent authentication attempts for same user', function () {
 });
 
 it('preserves user game state across authentication sessions', function () {
-    // Create user with game progress
+    // Create user with game progress (active today)
     $user = User::factory()->create([
         'telegram_id' => 111222333,
         'first_name' => 'Game Player',
@@ -236,10 +236,10 @@ it('preserves user game state across authentication sessions', function () {
         'correct_predictions' => 35,
         'current_streak' => 8,
         'best_streak' => 15,
-        'last_active_date' => now()->subDay()->toDateString(),
+        'last_active_date' => now()->toDateString(), // Already active today
     ]);
 
-    // Authenticate again (simulating app restart)
+    // Authenticate again (simulating app restart on same day)
     $response = $this->post('/auth/telegram', [
         'telegram_user' => [
             'id' => 111222333,
@@ -251,14 +251,14 @@ it('preserves user game state across authentication sessions', function () {
 
     $response->assertRedirect('/dashboard');
 
-    // Verify all game data is preserved
+    // Verify all game data is preserved and last_active_date unchanged (same day)
     $user->refresh();
     expect($user->daily_coins)->toBe(600);
     expect($user->total_predictions)->toBe(50);
     expect($user->correct_predictions)->toBe(35);
     expect($user->current_streak)->toBe(8);
     expect($user->best_streak)->toBe(15);
-    expect($user->last_active_date)->toBe(now()->subDay()->toDateString());
+    expect($user->last_active_date)->toBe(now()->toDateString()); // Should remain today
 });
 
 it('updates last active date on authentication', function () {

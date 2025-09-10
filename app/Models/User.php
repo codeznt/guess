@@ -54,7 +54,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'last_active_date' => 'date',
+            'last_active_date' => 'string',
             'daily_coins' => 'integer',
             'total_predictions' => 'integer',
             'correct_predictions' => 'integer',
